@@ -72,7 +72,8 @@ def test_schema_problems_are_reported_as_their_own_error_type(tmp_path):
 
 def test_tester_assertions_are_evaluated(tmp_path):
     tests = [
-        {"name": "positive_amounts", "description": "", "check": "out['amount'].dropna().gt(0).all()"},
+        {"name": "positive_amounts", "description": "",
+         "check": "out['amount'].dropna().gt(0).all()"},
         {"name": "has_four_rows", "description": "", "check": "len(out) == 4"},
         {"name": "broken_check", "description": "", "check": "out['nope'].sum() > 0"},
     ]

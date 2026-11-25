@@ -91,7 +91,9 @@ def test_runaway_code_is_killed_at_the_time_limit(tmp_path):
 
 def test_memory_limit_is_enforced(tmp_path):
     sandbox = DockerSandbox(timeout_s=20, memory="128m")
-    code = "def run(inputs):\n    blob = bytearray(1024 * 1024 * 1024)\n    return inputs['raw.t']\n"
+    code = ("def run(inputs):\n"
+            "    blob = bytearray(1024 * 1024 * 1024)\n"
+            "    return inputs['raw.t']\n")
     res = _run(sandbox, tmp_path, code)
     assert not res["ok"]
     assert res["error_type"] in {"MemoryError", "ResourceLimit"}

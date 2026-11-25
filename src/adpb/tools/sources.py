@@ -83,10 +83,8 @@ def resolve_inside(base: Path, relative: str) -> Path:
 def _records_from_json(data) -> list[dict]:
     if isinstance(data, dict):
         lists = [v for v in data.values() if isinstance(v, list)]
-        if len(lists) == 1:
-            data = lists[0]
-        else:
-            data = [data]
+        # {"data": [...]} -> the list; any other object is treated as a single record
+        data = lists[0] if len(lists) == 1 else [data]
     if not isinstance(data, list):
         raise SourceError("JSON source must be a list of records or an object with one list")
     return [r if isinstance(r, dict) else {"value": r} for r in data]

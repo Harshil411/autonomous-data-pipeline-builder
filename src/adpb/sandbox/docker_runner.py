@@ -101,7 +101,7 @@ class DockerSandbox:
         cmd = [
             "docker", "run", "--rm", "--name", name,
             "--network", "none",
-            "--read-only", "--tmpfs", "/tmp:rw,size=128m",
+            "--read-only", "--tmpfs", "/tmp:rw,size=128m",  # noqa: S108 - container tmpfs
             "--cpus", str(self.cpus), "--memory", self.memory, "--memory-swap", self.memory,
             "--pids-limit", str(self.pids),
             "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
