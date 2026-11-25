@@ -95,6 +95,16 @@ class TestProfile:
         assert len(p["sample"]) == 5
         assert len(json.dumps(p)) < 5_000
 
+    def test_low_cardinality_columns_list_every_value_with_counts(self):
+        # Found in a live run: with only 3 example values the Validator guessed an
+        # allowed-values rule that missed "refunded" and forced valid rows into quarantine.
+        df = pd.DataFrame({"status": ["paid"] * 50 + ["pending"] * 30 + ["shipped"] * 15
+                           + ["refunded"] * 5, "id": [str(i) for i in range(100)]})
+        cols = {c["name"]: c for c in profile(df, "t")["columns"]}
+        assert cols["status"]["values"] == {"paid": 50, "pending": 30, "shipped": 15,
+                                            "refunded": 5}
+        assert "values" not in cols["id"]  # too many distinct values to list
+
     def test_long_values_are_truncated_in_samples(self):
         df = pd.DataFrame({"blob": ["A" * 5_000]})
         p = profile(df, "t")

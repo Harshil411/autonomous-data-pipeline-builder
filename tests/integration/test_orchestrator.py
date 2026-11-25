@@ -186,8 +186,10 @@ def test_no_replans_left_ends_the_run_cleanly_without_touching_the_database(env)
 
 def test_quality_failure_is_routed_back_to_the_stage_that_made_the_data(env):
     script = happy_script()
+    # The user's own rule ("amounts are never negative") is carried by the plan.
+    script["planner"] = [PLAN.model_copy(update={
+        "quality_rules": [*PLAN.quality_rules, NON_NEGATIVE.rules[0]]})]
     script["coder"] = [CODE_CUSTOMERS, CODE_ORDERS_NAIVE, CODE_JOIN, CODE_ORDERS]
-    script["validator"] = [NON_NEGATIVE]
     h = start(env, script)
     state = h.run()
     assert state["status"] == "awaiting_approval", state.get("error")
@@ -196,6 +198,21 @@ def test_quality_failure_is_routed_back_to_the_stage_that_made_the_data(env):
     assert "clean_orders.amount.range" in recode_prompt  # the failing check is fed back
     rounds = events(h, "quality_result")
     assert rounds[0]["failed"] >= 1 and rounds[-1]["failed"] == 0
+
+
+def test_a_failed_guessed_rule_is_shown_to_the_human_not_forced_on_the_data(env):
+    # Found in a live run: a Validator-guessed allowed-values rule made the Coder drop
+    # valid rows. Agreement between models is weak evidence; only schema and request
+    # rules may force a re-code. Guessed rules that fail are reported at approval.
+    script = happy_script()
+    script["coder"] = [CODE_CUSTOMERS, CODE_ORDERS_NAIVE, CODE_JOIN]  # no re-code scripted
+    script["validator"] = [NON_NEGATIVE]  # origin "derived"
+    h = start(env, script)
+    state = h.run()
+    assert state["status"] == "awaiting_approval", state.get("error")
+    assert state["quality_round"] == 1
+    assert "clean_orders.amount.range" in events(h, "approval_requested")[-1]["failed_checks"]
+    assert [c["role"] for c in h.model.calls].count("coder") == 3
 
 
 # -- limits and the human ----------------------------------------------------------------------

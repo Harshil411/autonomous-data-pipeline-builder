@@ -374,13 +374,19 @@ class Orchestrator:
             rules, {s.id: self.ws.root / datasets[s.id]["path"] for s in plan.stages},
             run_root=self.ws.root, job=self._job("quality", f"r{qround}"))
         failures = [c for c in checks if not c.passed]
+        # Only contracts (schema) and the user's own rules may force a re-code. A rule the
+        # Validator guessed is weak evidence: if it fails, the human sees it at approval,
+        # but it never makes another agent change the data to fit it.
+        origin = {r.id: r.origin for r in rules}
+        blocking = [c for c in failures if origin.get(c.rule_id) in ("schema", "request")]
         self.events.emit("quality_result", round=qround, total=len(checks), failed=len(failures),
-                         checks=[c.model_dump() for c in checks],
+                         blocking=len(blocking), checks=[c.model_dump() for c in checks],
                          rules=[r.model_dump(mode="json") for r in rules])
         update: dict[str, Any] = {"derived_rules": derived_json,
                                   "quality": [c.model_dump() for c in checks],
                                   "quality_passed": not failures}
-        if failures and qround < self.limits.max_quality_rounds:
+        if blocking and qround < self.limits.max_quality_rounds:
+            failures = blocking
             failing = {c.dataset for c in failures}
             producer = next(s.id for s in plan.execution_order() if s.id in failing)
             feedback = "\n".join(

@@ -149,7 +149,9 @@ def render_profile(profile: dict[str, Any]) -> str:
                 f"distinct {c['distinct']}"]
         if "min" in c:
             bits.append(f"min {c['min']:g} max {c['max']:g} mean {c['mean']:g}")
-        if c.get("examples"):
+        if c.get("values"):
+            bits.append(f"ALL values with counts {c['values']}")
+        elif c.get("examples"):
             bits.append(f"examples {c['examples']}")
         if c.get("unparseable_examples"):
             bits.append(f"UNPARSEABLE {c['unparseable_examples']}")

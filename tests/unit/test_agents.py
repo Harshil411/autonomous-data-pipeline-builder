@@ -6,6 +6,8 @@ stage only, the tester rejects invalid expressions, the debugger can only return
 and the validator keeps only rules that refer to real datasets and columns.
 """
 
+from pathlib import Path
+
 import pytest
 
 from adpb.agents.base import Agent, AgentContext, AgentFailed
@@ -13,7 +15,7 @@ from adpb.agents.coder import StageCoder
 from adpb.agents.debugger import Debugger
 from adpb.agents.planner import Planner
 from adpb.agents.tester import Tester
-from adpb.agents.validator import Validator, schema_rules
+from adpb.agents.validator import Validator, schema_rules, usable
 from adpb.contracts import (
     BudgetLimits,
     ColumnSchema,
@@ -189,6 +191,20 @@ class TestRoles:
         assert "clean_orders.id.range" in ids
         assert "clean_orders.ghost.range" not in ids and "nowhere.*.row_count" not in ids
         assert {r.origin for r in rules} == {"schema", "derived"}
+
+    def test_foreign_keys_must_reference_an_upstream_dataset(self):
+        # Found in a live run: a key rule on clean_orders -> clean_customers can never be
+        # fixed by clean_orders, which never sees the customers.
+        from tests.integration.pipeline_fixtures import PLAN
+        from tests.integration.pipeline_fixtures import request as req
+        plan = Planner(ctx({"planner": [PLAN]}, Path("."))).plan(req(), {
+            "raw.customers": PROFILE["raw.orders"], "raw.orders": PROFILE["raw.orders"]})
+        on_join = QualityRule(kind=RuleKind.FOREIGN_KEY, dataset="customer_orders",
+                              column="customer_id", ref_dataset="clean_customers",
+                              ref_column="customer_id")
+        on_sibling = on_join.model_copy(update={"dataset": "clean_orders"})
+        assert usable(on_join, plan)
+        assert not usable(on_sibling, plan)
 
     def test_schema_rules_cover_not_null_pk_dtype_and_row_count(self):
         from adpb.contracts import PipelinePlan

@@ -16,6 +16,7 @@ INFER_ORDER = ["integer", "float", "boolean", "datetime", "string"]
 INFER_THRESHOLD = 0.95
 MAX_CHARS = 80
 INFER_ROWS = 50_000
+MAX_LISTED_VALUES = 25  # columns with this many distinct values or fewer list them all
 
 
 def _short(v) -> str | None:
@@ -57,6 +58,11 @@ def profile(df: pd.DataFrame, name: str, sample_rows: int = 5) -> dict:
         }
         if unparseable:
             info["unparseable_examples"] = unparseable
+        if 0 < info["distinct"] <= MAX_LISTED_VALUES:
+            # The full domain, with counts: a rule like "status in {...}" can only be
+            # proposed correctly if every value is visible, not just three examples.
+            counts = s.dropna().astype(str).value_counts()
+            info["values"] = {_short(v)[:40]: int(n) for v, n in counts.items()}
         if typed is not None and dtype in ("integer", "float"):
             info.update(min=float(typed.min()), max=float(typed.max()),
                         mean=round(float(typed.mean()), 4))

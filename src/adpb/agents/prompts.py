@@ -34,7 +34,8 @@ Rules:
   will be quarantined.
 - The last stage's output is the final table. Set final_dataset to its id.
 - Translate the user's stated quality rules into quality_rules entries (origin "request")
-  on the dataset they concern. Add a foreign_key rule for every join key.
+  on the dataset they concern. For every join, add a foreign_key rule on the dataset the
+  join PRODUCES, referencing the dataset joined to (never on a stage that cannot see it).
 - Prefer fewer, well-specified stages. Do not invent columns that are not derivable from
   the sources.
 You may search memory for similar past pipelines and known source schemas.
@@ -110,6 +111,8 @@ row_count, foreign_key. Good rules come from the request's meaning and the sourc
 data: amounts and quantities are non-negative, status columns take a small known set of
 values, ids are unique, joined keys exist in the referenced dataset, row counts are not
 zero. Do NOT restate dtype or NOT NULL constraints from the schema (they are added
-automatically). Do not invent ranges tighter than the source data supports.
+automatically). Do not invent ranges tighter than the source data supports. Propose
+allowed_values only for a column whose profile lists ALL its values, and then include
+every listed value that is legitimate - never drop a valid category.
 Propose at most 8 rules.
 {UNTRUSTED}"""

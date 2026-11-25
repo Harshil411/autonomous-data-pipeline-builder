@@ -49,11 +49,28 @@ def usable(rule: QualityRule, plan: PipelinePlan) -> bool:
     if any(c not in cols for c in needed):
         return False
     if rule.kind is RuleKind.FOREIGN_KEY:
+        # The stage blamed for a failure must be able to fix it, so the referenced
+        # dataset has to be one of its (transitive) inputs.
+        if rule.ref_dataset not in upstream(plan, rule.dataset):
+            return False
         try:
             return rule.ref_column in plan.stage(rule.ref_dataset).output.column_names
         except KeyError:
             return False
     return True
+
+
+def upstream(plan: PipelinePlan, stage_id: str) -> set[str]:
+    """Every stage whose output (directly or indirectly) feeds ``stage_id``."""
+    seen: set[str] = set()
+    todo = list(plan.stage(stage_id).inputs)
+    while todo:
+        name = todo.pop()
+        if name in seen or plan.producer_of(name) is None:
+            continue
+        seen.add(name)
+        todo.extend(plan.stage(name).inputs)
+    return seen
 
 
 def dedupe(rules: list[QualityRule]) -> list[QualityRule]:
