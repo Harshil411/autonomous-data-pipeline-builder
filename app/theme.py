@@ -143,7 +143,11 @@ p, li { font-size: 1.02rem; line-height: 1.55; }
 /* runs list: each run is a full-width button */
 .st-key-runlist button { justify-content: flex-start; text-align: left; min-height: 3.2rem;
   white-space: normal; line-height: 1.3; }
-.st-key-runlist button p { text-align: left; }
+.st-key-runlist button p, .st-key-presets button p { text-align: left; }
+.st-key-runlist button > div, .st-key-presets button > div { justify-content: flex-start;
+  text-align: left; width: 100%; }
+.st-key-runlist [data-testid="stMarkdownContainer"],
+.st-key-presets [data-testid="stMarkdownContainer"] { text-align: left; width: 100%; }
 
 /* example cards on the build page */
 .st-key-presets button { min-height: 5.4rem; white-space: normal; text-align: left;

@@ -127,7 +127,8 @@ def render_schematic(v: RunView) -> str:
     for s in v.stages.values():
         cls = "running" if s.status in ACTIVE else s.status if s.status in ("passed",
                                                                             "failed") else "pending"
-        aside = f"{s.rows_quarantined:,} rows set aside" if s.rows_quarantined else ""
+        n = s.rows_quarantined
+        aside = f"{n:,} row{'s' if n != 1 else ''} set aside" if n else ""
         node(s.id, cls, s.id, _stage_text(s.status, s), aside)
     table = "Final table"  # the stage feeding it often has the same name
     if v.load:
