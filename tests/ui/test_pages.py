@@ -90,3 +90,27 @@ def test_runs_page_lists_the_run_and_renders_it(home, paused_run):
 def test_static_pages_render(home, page):
     at = AppTest.from_file(str(PAGES / page), default_timeout=30).run()
     assert not at.exception
+
+
+def test_a_run_survives_a_page_reload(home, paused_run):
+    # Switching the look reloads the page, and a visitor may hit refresh mid-demo. The run
+    # is named in the address bar, so a fresh session picks it up again.
+    at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30)
+    at.query_params["run"] = paused_run.ws.run_id
+    at.run()
+    assert not at.exception
+    assert any(b.label.startswith("Approve and load 4 rows") for b in at.button)
+
+
+def test_an_unknown_run_in_the_address_bar_falls_back_to_describe(home):
+    at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30)
+    at.query_params["run"] = "run-that-does-not-exist"
+    at.run()
+    assert not at.exception
+    assert any(b.label == "Build the pipeline" for b in at.button)
+
+
+def test_header_offers_a_switch_between_the_two_looks(home):
+    at = AppTest.from_file(str(PAGES.parent / "Home.py"), default_timeout=30).run()
+    assert not at.exception
+    assert at.button(key="look").label == "Light"   # the look it would switch to
