@@ -29,8 +29,8 @@ def setup_page() -> None:
 
 
 def brand_header(subtitle: str) -> None:
-    html(f'<div class="adpb-head"><span class="name">Pipeline Builder</span>'
-         f'<span class="tag">{escape(subtitle)}</span></div>')
+    """One sentence under the shared header band saying what this page is for."""
+    html(f'<p class="intro">{escape(subtitle)}</p>')
 
 
 def status_pill(status: str) -> str:
@@ -62,13 +62,13 @@ def budget_meters(v: RunView) -> None:
             ("Tokens", b["tokens_fraction"], f"{b['tokens_spent']:,} of {b['tokens_limit']:,}"),
             ("Time", b["seconds_fraction"], f"{b['seconds_elapsed']:.0f}s of "
                                             f"{b['seconds_limit']:.0f}s")]
-    out = []
+    out = ['<div class="meters">']
     for label, frac, text in rows:
         hot = " hot" if frac > 0.85 else ""
         out.append(f'<div class="meter"><div class="top"><span>{label} budget</span>'
                    f'<span>{text}</span></div><div class="track"><div class="fill{hot}" '
                    f'style="width:{max(1.5, frac * 100):.1f}%"></div></div></div>')
-    html("".join(out))
+    html("".join(out) + "</div>")
 
 
 def schematic(v: RunView) -> None:
@@ -94,9 +94,18 @@ def activity_feed(v: RunView, limit: int = 40) -> None:
     html("".join(rows))
 
 
-def approval_gate(v: RunView, live: bool, on_decide=None) -> None:
+def approval_gate(v: RunView, live: bool, on_decide=None, replay_note: str = "") -> None:
     req = v.approval_request
     if not req:
+        return
+    if v.load:  # decided and loaded: the gate gives way to the outcome
+        by = (v.approval or {}).get("by", "someone")
+        st.success(f"Loaded {v.load['rows']:,} rows into {v.load['table']}. Approved by {by}.")
+        return
+    if v.approval and not v.approval["approved"]:
+        st.error(f"Rejected by {v.approval['by']}"
+                 + (f": {v.approval['note']}" if v.approval.get("note") else "")
+                 + f". {req['table']} was not touched.")
         return
     failed = req.get("failed_checks") or []
     existing = req.get("existing_production_rows")
@@ -117,7 +126,7 @@ def approval_gate(v: RunView, live: bool, on_decide=None) -> None:
             st.error(f"{verb} by {v.approval['by']}: {v.approval.get('note') or 'no note'}")
         return
     if not live or on_decide is None:
-        st.caption("Replay: the decision appears when the recording reaches it.")
+        st.caption(replay_note or "Use \u201cOpen the approval gate\u201d above to decide.")
         return
     with st.form(f"gate-{v.run_id}"):
         who = st.text_input("Your name", value=st.session_state.get("approver", ""),
@@ -236,14 +245,12 @@ def report_panel(run_root: Path) -> None:
     st.markdown(md.read_text())
 
 
-def run_body(v: RunView, run_root: Path, live: bool, on_decide=None) -> None:
+def run_body(v: RunView, run_root: Path, live: bool, on_decide=None,
+             replay_note: str = "") -> None:
     run_heading(v)
-    left, right = st.columns([3, 1])
-    with left:
-        schematic(v)
-    with right:
-        budget_meters(v)
-    approval_gate(v, live, on_decide)
+    schematic(v)
+    budget_meters(v)
+    approval_gate(v, live, on_decide, replay_note)
     tabs = st.tabs(["Team activity", "Stage inspector", "Data quality", "Cost", "Report"])
     with tabs[0]:
         activity_feed(v)

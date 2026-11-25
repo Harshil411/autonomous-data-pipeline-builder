@@ -12,13 +12,13 @@ from html import escape
 
 from app.viewmodel import ACTIVE, RunView
 
-W, H, GX, GY, PAD = 200, 66, 64, 18, 16
+W, H, GX, GY, PAD = 232, 76, 56, 18, 10
 
 STYLE = """
 <style>
   .sch text { font-family: inherit; }
-  .sch .title { font-size: 14px; font-weight: 700; fill: #1D2027; }
-  .sch .sub { font-size: 12px; fill: #4A505C; }
+  .sch .title { font-size: 18px; font-weight: 700; fill: #1D2027; }
+  .sch .sub { font-size: 15px; fill: #4A505C; }
   .sch .edge { fill: none; stroke: #B9BEC8; stroke-width: 2; }
   .sch .edge.done { stroke: #1F7A4D; }
   .sch .node rect.box { fill: #FFFFFF; stroke: #C9CDD5; stroke-width: 1.5; }
@@ -67,8 +67,17 @@ def render_schematic(v: RunView) -> str:
     depth = _depths(v)
     gate_col = max(depth.values(), default=0) + 1
     columns: dict[int, list[str]] = {}
-    for name, d in depth.items():
-        columns.setdefault(d, []).append(name)
+    for name in [*v.sources, *v.stages]:  # sources in load order, stages in plan order
+        if name in depth:
+            columns.setdefault(depth[name], []).append(name)
+    # Crossing reduction: order each column by the mean row of its inputs (barycentre).
+    row_of: dict[str, float] = {n: i for i, n in enumerate(columns.get(0, []))}
+    for col in sorted(c for c in columns if c > 0):
+        def centre(name: str) -> float:
+            ins = [row_of[i] for i in v.stages[name].inputs if i in row_of]
+            return sum(ins) / len(ins) if ins else 0.0
+        columns[col].sort(key=centre)
+        row_of.update({n: i for i, n in enumerate(columns[col])})
     columns[gate_col] = ["__warehouse__"]
     rows = max(len(c) for c in columns.values())
     width = PAD * 2 + (gate_col + 1) * W + gate_col * GX
@@ -107,8 +116,8 @@ def render_schematic(v: RunView) -> str:
                          f'rx="12"/>')
         parts.append(f'<rect class="box" width="{W}" height="{H}" rx="8"/>')
         parts.append(f'<rect class="bar" width="6" height="{H}" rx="3"/>')
-        parts.append(f'<text class="title" x="18" y="27">{escape(title[:24])}</text>')
-        parts.append(f'<text class="sub" x="18" y="48">{escape(sub[:30])}</text></g>')
+        parts.append(f'<text class="title" x="18" y="31">{escape(title[:22])}</text>')
+        parts.append(f'<text class="sub" x="18" y="57">{escape(sub[:28])}</text></g>')
 
     for name, info in v.sources.items():
         node(name, "source", name, f"source: {info['rows']:,} rows")
@@ -116,7 +125,7 @@ def render_schematic(v: RunView) -> str:
         cls = "running" if s.status in ACTIVE else s.status if s.status in ("passed",
                                                                             "failed") else "pending"
         node(s.id, cls, s.id, _stage_text(s.status, s))
-    table = v.target_table or "warehouse"
+    table = "Final table"  # the stage feeding it often has the same name
     if v.load:
         node("__warehouse__", "loaded", table, f"loaded: {v.load['rows']:,} rows")
     elif v.status == "awaiting_approval":

@@ -27,12 +27,10 @@ AGENT_COLORS = {
 
 CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
-html, body, [class*="css"], .stMarkdown, .stText, button, input, textarea, select {
-  font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
-}
-code, pre, .stCode * { font-family: 'JetBrains Mono', ui-monospace, monospace !important; }
-.block-container { padding-top: 1.6rem; max-width: 1480px; }
+.block-container { padding-top: 3.2rem; max-width: 1480px; }
+[data-testid="stPageLink"] a { border-radius: 6px; padding: .2rem .55rem; }
+[data-testid="stPageLink"] a[aria-current="page"] { background: #FBF2F5; }
+[data-testid="stPageLink"] a[aria-current="page"] p { color: #861F41; font-weight: 700; }
 h1, h2, h3 { color: #1D2027; letter-spacing: -0.01em; }
 h1 { font-size: 2.1rem; font-weight: 700; }
 h2 { font-size: 1.45rem; font-weight: 700; }
@@ -41,6 +39,10 @@ p, li { font-size: 1.02rem; line-height: 1.55; }
 .muted { color: #4A505C; }
 
 /* header band */
+.wordmark { font-size: 1.55rem; font-weight: 700; color: #861F41; }
+.band { border-bottom: 2px solid #861F41; margin: -.4rem 0 1rem; }
+.intro { color: #4A505C; font-size: 1.05rem; margin: 0 0 1rem; max-width: 80ch; }
+.meters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4rem; margin: 0 0 .8rem; }
 .adpb-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
   border-bottom: 2px solid #861F41; padding-bottom: .5rem; margin-bottom: 1rem; }
 .adpb-head .name { font-size: 1.6rem; font-weight: 700; color: #861F41; }
@@ -68,8 +70,10 @@ p, li { font-size: 1.02rem; line-height: 1.55; }
 .meter .fill.hot { background: #B42318; }
 
 /* activity timeline: rows with an agent rule, not a stack of identical cards */
-.act { border-left: 4px solid #6B7180; padding: .45rem .8rem; margin: 0 0 .35rem;
-  background: #FFFFFF; border-radius: 0 6px 6px 0; }
+.act { border-left: 4px solid #6B7180; padding: .35rem .8rem; margin: 0 0 .25rem;
+  background: #FFFFFF; border-radius: 0 6px 6px 0;
+  display: grid; grid-template-columns: 8.5rem 1fr; column-gap: .6rem; align-items: baseline; }
+.act .why { grid-column: 2; }
 .act .who { font-weight: 700; font-size: .92rem; }
 .act .what { font-size: 1.02rem; color: #1D2027; }
 .act .why { font-size: .88rem; color: #4A505C; margin-top: .15rem; white-space: pre-wrap;

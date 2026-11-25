@@ -4,6 +4,11 @@ primaryColor = "#861F41"
 backgroundColor = "#F4F5F7"
 secondaryBackgroundColor = "#FFFFFF"
 textColor = "#1D2027"
+# Atkinson Hyperlegible Next: designed for legibility (a laptop read from a metre away).
+# Without internet at the booth the browser falls back to its system sans-serif.
+font = "Atkinson Hyperlegible Next:https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap"
+codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
+baseFontSize = 16
 
 [server]
 headless = true

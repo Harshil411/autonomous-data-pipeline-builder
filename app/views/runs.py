@@ -11,7 +11,7 @@ import streamlit as st
 
 from adpb.config import load_settings
 from adpb.observability.events import EventLog
-from app.components import brand_header, run_body
+from app.components import STATUS_WORDS, brand_header, run_body
 from app.state import manager
 from app.viewmodel import build_view
 
@@ -28,7 +28,8 @@ def list_runs() -> list[dict]:
         req = json.loads((run / "request.json").read_text()) if (run / "request.json").exists() \
             else {}
         cost = (state.get("spent") or {}).get("usd_spent")
-        rows.append({"run": run.name, "status": state.get("status", "-"),
+        status = state.get("status", "-")
+        rows.append({"run": run.name, "status": STATUS_WORDS.get(status, status),
                      "request": req.get("request", "")[:90],
                      "cost ($)": round(cost, 4) if cost is not None else None})
     return rows
@@ -44,7 +45,8 @@ def replay(run_id: str, events: list[dict]) -> None:
     view = build_view(events[: st.session_state[key]])
     st.progress(st.session_state[key] / len(events),
                 text=f"Replaying a recorded run: event {st.session_state[key]} of {len(events)}")
-    run_body(view, settings.runs_dir / run_id, live=False)
+    run_body(view, settings.runs_dir / run_id, live=False,
+             replay_note="Replay: the decision appears when the recording reaches it.")
 
 
 def main() -> None:
@@ -54,7 +56,7 @@ def main() -> None:
     if not runs:
         st.info("No runs yet. Build a pipeline first.")
         return
-    st.dataframe(pd.DataFrame(runs), hide_index=True, use_container_width=True, height=240)
+    st.dataframe(pd.DataFrame(runs), hide_index=True, use_container_width=True)
     run_id = st.selectbox("Open a run", [r["run"] for r in runs])
     root = settings.runs_dir / run_id
     events = EventLog.read(root / "events.jsonl")
@@ -71,7 +73,7 @@ def main() -> None:
                  disabled=view.status not in ("failed", "budget_exceeded")):
         mgr.resume(run_id)
         st.session_state["run_id"] = run_id
-        st.switch_page("pages/build.py")
+        st.switch_page("views/build.py")
     if c4.button("Re-run without the model", use_container_width=True,
                  disabled=not (root / "pipeline" / "manifest.json").exists()):
         from adpb.orchestrator.rerun import rerun
@@ -87,7 +89,7 @@ def main() -> None:
                      f"expected {result['expected']}.")
     if view.status == "awaiting_approval" and st.button("Open the approval gate"):
         st.session_state["run_id"] = run_id
-        st.switch_page("pages/build.py")
+        st.switch_page("views/build.py")
 
     if st.session_state.get("replaying") == run_id:
         replay(run_id, events)

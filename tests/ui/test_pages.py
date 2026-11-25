@@ -15,7 +15,7 @@ from adpb.llm.scripted import ScriptedModel
 from adpb.runtime import RunHandle
 from tests.integration.pipeline_fixtures import CUSTOMERS_CSV, ORDERS_CSV, happy_script, request
 
-PAGES = Path(__file__).resolve().parents[2] / "app" / "pages"
+PAGES = Path(__file__).resolve().parents[2] / "app" / "views"
 
 
 @pytest.fixture
