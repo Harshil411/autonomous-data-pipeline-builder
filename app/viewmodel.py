@@ -149,6 +149,9 @@ def build_view(events: list[dict]) -> RunView:
             verb = "Rewrote" if e.get("revised") else "Wrote"
             add("tester", f"{verb} {len(e['tests'])} tests for {s.id}, before any code existed",
                 stage=s.id)
+        elif k == "test_disputed" and e["stage"] in v.stages:
+            add("debugger", f"Disputed test {e['test']} in {e['stage']}; sent back to the "
+                            f"Tester, who owns it", "wait", e["stage"], detail=e.get("reason", ""))
         elif k == "code_written" and e["stage"] in v.stages:
             s = v.stages[e["stage"]]
             s.code_versions.append({k2: e.get(k2) for k2 in

@@ -278,10 +278,23 @@ class Orchestrator:
                 if attempt == self.limits.max_retries_per_stage:
                     break
                 self._status(sid, StageStatus.DEBUGGING, attempt=attempt)
-                code, diagnosis = self.debugger.fix(spec, code, res, tests, inputs_prof,
-                                                    rec["history"])
-                rec["history"].append(f"attempt {attempt}: {diagnosis}")
-                self._save_code(rec, code, author="debugger", note=diagnosis)
+                code, patch = self.debugger.fix(spec, code, res, tests, inputs_prof,
+                                                rec["history"])
+                rec["history"].append(f"attempt {attempt}: {patch.diagnosis}")
+                self._save_code(rec, code, author="debugger", note=patch.diagnosis)
+                disputed = next((t for t in tests.tests if t.name == patch.disputed_test),
+                                None)
+                if disputed and not tests_revised:
+                    # The Debugger cannot change a test; the Tester, who owns it, reviews it.
+                    self.events.emit("test_disputed", stage=sid, test=disputed.name,
+                                     reason=patch.dispute_reason[:800])
+                    tests = self.tester.write_tests(spec, inputs_prof, broken=(
+                        f"The Debugger disputes test '{disputed.name}' (`{disputed.check}`): "
+                        f"{patch.dispute_reason}\nReview it. Rewrite it only if it is "
+                        f"genuinely wrong; keep every test that checks real behaviour."))
+                    rec["tests"], tests_revised = tests.model_dump(), True
+                    self.events.emit("tests_written", stage=sid, revised=True,
+                                     tests=[t.model_dump() for t in tests.tests])
         except AgentFailed as exc:  # an agent could not produce valid output: stage fails
             rec["last_error"] = str(exc)
 

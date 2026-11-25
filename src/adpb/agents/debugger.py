@@ -18,7 +18,7 @@ class Debugger(Agent):
 
     def fix(self, stage: StageSpec, code: StageCode, result: ExecutionResult,
             tests: StageTests, input_profiles: dict[str, dict],
-            history: list[str]) -> tuple[StageCode, str]:
+            history: list[str]) -> tuple[StageCode, DebugPatch]:
         failing = [f"- {t.name}: {t.detail}" for t in result.failed_tests]
         test_text = "\n".join(f"- {t.name}: `{t.check}` ({t.description})" for t in tests.tests)
         lines = [
@@ -43,4 +43,4 @@ class Debugger(Agent):
         patch = self.ask("\n\n".join(lines), DebugPatch, stage=stage.id)
         fixed = StageCode(stage_id=stage.id, language=stage.language, code=patch.code,
                           notes=patch.diagnosis)
-        return fixed, patch.diagnosis
+        return fixed, patch

@@ -161,6 +161,17 @@ class TestRoles:
         assert "not a valid expression" in c.model.calls[1]["prompt_text"]
         assert "def run" not in c.model.calls[0]["prompt_text"]
 
+    def test_tester_rejects_the_invert_any_precedence_trap(self, tmp_path):
+        # Found in the benchmark: `~s.isin(x).any()` applies ~ to the single bool from
+        # .any(), so the test fails even for correct output.
+        trap = StageTests(stage_id="x", tests=[StageTest(
+            name="no_unknown", description="", check='~out["id"].isin([1]).any()')])
+        good = StageTests(stage_id="x", tests=[StageTest(
+            name="no_unknown", description="", check='not out["id"].isin([1]).any()')])
+        c = ctx({"tester": [trap, good]}, tmp_path)
+        Tester(c).write_tests(STAGE, PROFILE)
+        assert "not x.any()" in c.model.calls[1]["prompt_text"]
+
     def test_debugger_sees_failure_and_history_but_returns_only_code(self, tmp_path):
         patch = DebugPatch(diagnosis="ids had spaces", code="def run(inputs):\n    return 1\n")
         c = ctx({"debugger": [patch]}, tmp_path)
@@ -170,8 +181,9 @@ class TestRoles:
         tests = StageTests(stage_id="clean_orders", tests=[
             StageTest(name="t1", description="ids ok", check="out['id'].notna().all()")])
         code = StageCode(stage_id="clean_orders", code="def run(inputs):\n    return 0\n")
-        fixed, diagnosis = Debugger(c).fix(STAGE, code, result, tests, PROFILE,
-                                           history=["attempt 1: stripped quotes"])
+        fixed, patch = Debugger(c).fix(STAGE, code, result, tests, PROFILE,
+                                       history=["attempt 1: stripped quotes"])
+        diagnosis = patch.diagnosis
         prompt = c.model.calls[0]["prompt_text"]
         assert "TestFailure" in prompt and "attempt 1: stripped quotes" in prompt
         assert "cannot change them" in prompt

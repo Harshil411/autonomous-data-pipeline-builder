@@ -81,6 +81,7 @@ keys unique. Tests run on a SAMPLE of the data first and then on all of it, so n
 hard-code row counts or specific values that might not be in a sample. Tolerate floats
 (use round or abs(a-b) < 1e-6). Always reduce Series to a bool with .all() / .any().
 Do not test column dtypes or names: the harness enforces the schema already.
+Write `not x.any()`, never `~x.any()` (~ would apply to the single True/False).
 {UNTRUSTED}"""
 
 DEBUGGER = f"""You are the Debugger. A pipeline stage failed in the sandbox. You receive its
@@ -95,6 +96,10 @@ Rules:
   different approach.
 - Fix the cause, not the symptom: never special-case the sample rows, never silence an
   exception by returning an empty frame, never drop valid rows to make a test pass.
+- If you are certain a test is wrong - no correct output could pass it - set
+  disputed_test to its name and explain why in dispute_reason. The Tester who wrote it
+  will review it; you still return your best code (unchanged if it is already correct).
+  Dispute only with evidence, never to escape a test the code genuinely fails.
 - Same code contract as the coder: def run(inputs) -> DataFrame (or one DuckDB SELECT).
 You may search memory for verified fixes of similar errors, and run allow-listed shell
 commands (ls, head, wc, python ...) inside the sandbox against /inputs.

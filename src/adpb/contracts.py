@@ -434,6 +434,10 @@ class DebugPatch(_Frozen):
 
     diagnosis: str = Field(min_length=5, max_length=2000)
     code: str = Field(min_length=10, max_length=20_000)
+    # The Debugger may not edit a test, but it may dispute one it believes no correct
+    # output can pass. The orchestrator sends the dispute to the Tester, who owns it.
+    disputed_test: str | None = None
+    dispute_reason: str = Field(default="", max_length=1000)
 
 
 class RuleProposals(_Frozen):

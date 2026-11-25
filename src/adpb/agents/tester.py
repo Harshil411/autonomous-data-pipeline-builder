@@ -9,6 +9,7 @@ the full data. The Tester's model has no tools; the Tester's *code* may call
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 from adpb.agents.base import Agent, render_profile, render_schema
@@ -39,9 +40,15 @@ class Tester(Agent):
         def check(tests: StageTests) -> StageTests:
             for t in tests.tests:  # every check must at least be valid Python syntax
                 try:
-                    compile(t.check, t.name, "eval")
+                    tree = ast.parse(t.check, mode="eval")
                 except SyntaxError as exc:
                     raise ValueError(f"test '{t.name}' is not a valid expression: {exc}") from exc
+                if trap := _invert_reduction(tree):
+                    raise ValueError(
+                        f"test '{t.name}': `~...{trap}()` applies ~ to the single True/False "
+                        f"that .{trap}() returns, not to each value, so it is wrong even for "
+                        f"correct output. Write `not x.{trap}()` or `(~x).{trap}()`; for "
+                        f"example `not x.any()`.")
             return tests.model_copy(update={"stage_id": stage.id})
 
         return self.ask("\n\n".join(lines), StageTests, stage=stage.id, check=check)
@@ -60,3 +67,14 @@ class Tester(Agent):
         result.setdefault("stage_id", stage.id)
         known = ExecutionResult.model_fields
         return ExecutionResult.model_validate({k: v for k, v in result.items() if k in known})
+
+
+def _invert_reduction(tree: ast.AST) -> str | None:
+    """Find `~<expr>.any()` / `~<expr>.all()`: a precedence trap seen in a live benchmark."""
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Invert)
+                and isinstance(node.operand, ast.Call)
+                and isinstance(node.operand.func, ast.Attribute)
+                and node.operand.func.attr in ("any", "all")):
+            return node.operand.func.attr
+    return None

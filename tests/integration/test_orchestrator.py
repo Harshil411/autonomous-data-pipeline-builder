@@ -36,6 +36,7 @@ from tests.integration.pipeline_fixtures import (
     happy_script,
     request,
 )
+from tests.integration.pipeline_fixtures import tests as make_tests
 
 SECRET = "approval-secret-for-tests"
 
@@ -149,6 +150,26 @@ def test_failing_stage_is_debugged_until_it_passes_and_the_fix_is_remembered(env
     assert "first guess" in debugger_prompts[1]  # second attempt is told what was tried
     stored = h.memory_search_fixes("KeyError raw.order")
     assert any("raw.orders" in r["fix"] for r in stored)
+
+
+def test_a_disputed_test_goes_back_to_the_tester_not_the_debugger(env):
+    # Found in the benchmark: the Debugger correctly diagnosed a wrong test three times
+    # but could not change it (by design), so a correct stage failed. Now it can dispute
+    # the test; the Tester, who owns it, reviews and rewrites it.
+    script = happy_script()
+    wrong = make_tests("clean_orders", "len(out) > 1000")  # can never pass on this data
+    script["tester"] = [TESTS_CUSTOMERS, wrong, TESTS_ORDERS, TESTS_JOIN]
+    script["debugger"] = [DebugPatch(
+        diagnosis="The code is correct; the test expects more rows than the source has.",
+        code=CODE_ORDERS.code, disputed_test="t1",
+        dispute_reason="raw.orders has 7 rows, so len(out) > 1000 cannot hold")]
+    h = start(env, script)
+    state = h.run()
+    assert state["status"] == "awaiting_approval", state.get("error")
+    assert state["stages"]["clean_orders"]["attempts"] == 2
+    tester_prompts = [c["prompt_text"] for c in h.model.calls if c["role"] == "tester"]
+    assert any("disputes" in p and "len(out) > 1000" in p for p in tester_prompts)
+    assert events(h, "test_disputed")[0]["test"] == "t1"
 
 
 def test_exhausted_retries_escalate_to_a_replan_that_keeps_passing_stages(env):
