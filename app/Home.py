@@ -14,10 +14,10 @@ import streamlit as st  # noqa: E402
 from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(ROOT / ".env")
-st.set_page_config(page_title="Pipeline Builder", layout="wide",
-                   initial_sidebar_state="collapsed")
+from app.components import favicon, look_switch, setup_page, wordmark  # noqa: E402
 
-from app.components import look_switch, setup_page, wordmark  # noqa: E402
+st.set_page_config(page_title="Pipeline Builder", page_icon=favicon(), layout="wide",
+                   initial_sidebar_state="collapsed")
 
 setup_page()
 PAGES = [

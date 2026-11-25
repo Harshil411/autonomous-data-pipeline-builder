@@ -21,7 +21,7 @@ import pandas as pd
 import streamlit as st
 
 from app.graph import render_graph
-from app.theme import active_mode, css
+from app.theme import THEMES, active_mode, css
 from app.viewmodel import RunView, agent_label, hero, journey_step, proofs
 
 STATUS_WORDS = {"running": "Working", "awaiting_approval": "Waiting for your approval",
@@ -91,9 +91,30 @@ LOGO = (
     '<defs><linearGradient id="logo-ink" gradientUnits="userSpaceOnUse" x1="3" y1="14" '
     'x2="25" y2="14"><stop class="l1" offset="0"/><stop class="l2" offset="1"/>'
     '</linearGradient></defs>'
-    '<path d="M4.5 7.5H9C14 7.5 13 14 18 14H21.5M4.5 20.5H9C14 20.5 13 14 18 14"/>'
+    '<path d="M4.5 7.5H9C14 7.5 13 14 18 14H21.5M4.5 20.5H9C14 20.5 13 14 18 14"/>'  # = _LOGO_PATH
     '<circle cx="4.5" cy="7.5" r="2.2"/><circle cx="4.5" cy="20.5" r="2.2"/>'
     '<circle class="out" cx="22.5" cy="14" r="3.4"/></svg>')
+
+
+# The same drawing for the browser tab. A tab icon cannot read the app's stylesheet, so
+# its colours are written out: the Night accent, which reads on light and dark tab bars.
+_LOGO_PATH = "M4.5 7.5H9C14 7.5 13 14 18 14H21.5M4.5 20.5H9C14 20.5 13 14 18 14"
+
+
+def favicon() -> str:
+    """The logo as a self-contained SVG, for `st.set_page_config(page_icon=...)`."""
+    dark = THEMES["dark"]
+    start, end = dark["grad-1"], dark["grad-2"]
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="64" height="64">'
+        '<defs><linearGradient id="ink" gradientUnits="userSpaceOnUse" x1="3" y1="14" x2="25" '
+        f'y2="14"><stop offset="0" stop-color="{start}"/><stop offset="1" stop-color="{end}"/>'
+        '</linearGradient></defs>'
+        f'<path d="{_LOGO_PATH}" fill="none" stroke="url(#ink)" stroke-width="2.8" '
+        'stroke-linecap="round" stroke-linejoin="round"/>'
+        f'<circle cx="4.5" cy="7.5" r="2.4" fill="{start}"/>'
+        f'<circle cx="4.5" cy="20.5" r="2.4" fill="{start}"/>'
+        f'<circle cx="22.5" cy="14" r="3.6" fill="{end}"/></svg>')
 
 
 def wordmark() -> str:

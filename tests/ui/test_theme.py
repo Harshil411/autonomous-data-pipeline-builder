@@ -68,3 +68,16 @@ def test_the_look_is_dark_unless_the_browser_says_light():
 def test_graph_carries_no_colours_of_its_own(recorded):
     # colour comes from the stylesheet's classes, so the same SVG works in both modes
     assert HEX.search(render_graph(build_view(recorded))) is None
+
+
+def test_tab_icon_is_the_logo_drawn_to_stand_alone():
+    # A browser tab cannot read the app's stylesheet, so the icon carries real colours,
+    # but it must be the same drawing as the header logo.
+    from app.components import LOGO, favicon
+
+    icon = favicon()
+    assert icon.startswith("<svg") and 'xmlns="http://www.w3.org/2000/svg"' in icon
+    shape = re.search(r'<path d="([^"]+)"', LOGO).group(1)
+    assert f'd="{shape}"' in icon
+    assert "var(--" not in icon and "class=" not in icon
+    assert len(HEX.findall(icon)) >= 2  # the maroon-to-orange accent, written out
