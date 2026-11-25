@@ -43,6 +43,10 @@ def test_new_run_form_prefills_the_showcase_example(home):
     assert "customers" in at.text_area[0].value.lower()
     assert any(b.label == "Build the pipeline" for b in at.button)
     assert len([b for b in at.button if b.key and b.key.startswith("preset-")]) == 5
+    # the Describe screen leads with one sentence and the journey's three steps
+    page = " ".join(m.value for m in at.markdown)
+    assert "Describe the data you need" in page
+    assert all(step in page for step in ("Describe", "Build", "Approve"))
 
 
 def test_form_refuses_a_request_without_sources(home):
@@ -58,7 +62,7 @@ def test_approval_gate_loads_the_data_when_approved(home, paused_run):
     at.session_state["run_id"] = paused_run.ws.run_id
     at.run()
     assert not at.exception
-    load = next(b for b in at.button if b.label.startswith("Load 4 rows"))
+    load = next(b for b in at.button if b.label.startswith("Approve and load 4 rows"))
     at.text_input[0].set_value("Booth visitor")
     load.click().run()
     deadline = time.monotonic() + 30
@@ -75,8 +79,10 @@ def test_runs_page_lists_the_run_and_renders_it(home, paused_run):
     assert not at.exception
     assert any(b.key == f"pick-{paused_run.ws.run_id}" for b in at.button)
     assert any(b.label == "Replay this run" for b in at.button)
+    # the run is drawn as the live graph, with the gate asking for a person
+    assert any('class="node gate needed"' in m.value for m in at.markdown)
     # a paused run can be decided right here
-    assert any(b.label.startswith("Load 4 rows") for b in at.button)
+    assert any(b.label.startswith("Approve and load 4 rows") for b in at.button)
 
 
 @pytest.mark.parametrize("page", ["benchmarks.py", "how_it_works.py"])

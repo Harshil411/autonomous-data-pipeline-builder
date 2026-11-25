@@ -6,36 +6,7 @@ renders the first N - so the booth fallback can never drift from the real thing.
 
 import pytest
 
-from adpb.contracts import DebugPatch
-from adpb.llm.scripted import ScriptedModel
-from adpb.observability.events import EventLog
-from adpb.runtime import RunHandle
-from app.schematic import render_schematic
 from app.viewmodel import agent_states, build_view, now_line
-from tests.integration.pipeline_fixtures import (
-    CODE_ORDERS,
-    CODE_ORDERS_BUGGY,
-    CUSTOMERS_CSV,
-    ORDERS_CSV,
-    happy_script,
-    request,
-)
-
-
-@pytest.fixture(scope="module")
-def recorded(tmp_path_factory):
-    tmp = tmp_path_factory.mktemp("ui")
-    (tmp / "customers.csv").write_text(CUSTOMERS_CSV)
-    (tmp / "orders.csv").write_text(ORDERS_CSV)
-    script = happy_script()
-    script["coder"][1] = CODE_ORDERS_BUGGY
-    script["debugger"] = [DebugPatch(diagnosis="dataset is raw.orders", code=CODE_ORDERS.code)]
-    h = RunHandle.create(request(), [tmp / "customers.csv", tmp / "orders.csv"],
-                         home=tmp / "var", model=ScriptedModel(script),
-                         approval_secret="ui-secret-xxxxxx", sandbox="local", embeddings="hash")
-    h.run()
-    h.decide(approved=True, by="Booth visitor")
-    return EventLog.read(h.ws.events_path)
 
 
 def test_full_log_shows_a_finished_run(recorded):
@@ -90,23 +61,6 @@ def test_waiting_for_approval_is_its_own_state(recorded):
 def test_empty_log_is_an_empty_view():
     v = build_view([])
     assert v.status == "not started" and v.stages == {} and v.activity == []
-
-
-def test_schematic_draws_every_node_with_a_text_status(recorded):
-    svg = render_schematic(build_view(recorded))
-    assert svg.startswith("<svg")
-    for name in ("raw.customers", "clean_orders", "customer_orders"):
-        assert name in svg
-    assert "passed" in svg  # status is written, not only coloured
-    assert "aria-label" in svg
-
-
-def test_schematic_marks_the_running_stage(recorded):
-    cut = next(i for i, e in enumerate(recorded)
-               if e["kind"] == "stage_status" and e["stage"] == "clean_orders") + 1
-    svg = render_schematic(build_view(recorded[:cut]))
-    assert 'class="node running"' in svg
-
 
 
 # -- the "now" line and the agent lane (what a visitor reads from across the table) -------
