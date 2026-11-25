@@ -5,13 +5,13 @@ renders the first N - so the booth fallback can never drift from the real thing.
 """
 
 import pytest
-from app.schematic import render_schematic
-from app.viewmodel import build_view
 
 from adpb.contracts import DebugPatch
 from adpb.llm.scripted import ScriptedModel
 from adpb.observability.events import EventLog
 from adpb.runtime import RunHandle
+from app.schematic import render_schematic
+from app.viewmodel import build_view
 from tests.integration.pipeline_fixtures import (
     CODE_ORDERS,
     CODE_ORDERS_BUGGY,

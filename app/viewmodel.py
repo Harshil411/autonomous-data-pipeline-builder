@@ -99,8 +99,8 @@ def build_view(events: list[dict]) -> RunView:
         v.run_id = e.get("run_id", v.run_id)
         v.started_ts = v.started_ts or ts
         v.last_ts = ts
-        add = lambda agent, text, tone="neutral", stage=None, detail="": v.activity.append(  # noqa: E731
-            Activity(seq, ts, agent, text, stage, tone, detail))
+        def add(agent, text, tone="neutral", stage=None, detail="", _seq=seq, _ts=ts):
+            v.activity.append(Activity(_seq, _ts, agent, text, stage, tone, detail))
 
         if k == "run_started":
             v.status, v.request = "running", e["request"]
