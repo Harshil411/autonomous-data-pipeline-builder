@@ -1,0 +1,28 @@
+# Secrets: never commit (requirement 24). List expected keys in .env.example instead.
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Runtime state produced by pipeline runs
+var/
+runs/
+*.sqlite3
+*.db
+!benchmarks/fixtures/**/*.db
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
