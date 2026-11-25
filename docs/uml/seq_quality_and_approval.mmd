@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant O as Orchestrator (code)
+    participant V as Validator
+    participant SB as Sandbox MCP
+    participant C as Stage Coder
+    participant W as Warehouse MCP
+
+    O->>V: propose(plan, output profiles, raw profiles)
+    V-->>O: derived rules (fixed after round 1: no moving goalposts)
+    O->>O: add schema rules (dtype, NOT NULL, PK unique, rows > 0) + request rules
+    O->>SB: run_quality(datasets, rules)
+    SB-->>O: CheckResults
+    alt failures and quality_round < max_quality_rounds
+        O->>O: producer = first stage (topological) whose dataset failed
+        O->>C: write(stage, feedback = failing checks + example rows)
+        Note over O,C: then rebuild the producer and every downstream stage
+    else no failures, or rounds exhausted (failures shown to the human)
+        O->>W: stage_table(final dataset) -> staging__table + fingerprint
+        O->>W: write_quarantine(all quarantined rows with reasons)
+        O-->>U: interrupt: rows, existing rows, quarantine, failed checks, preview
+        Note over O: LangGraph interrupt + SQLite checkpoint: the run waits here
+        U->>O: approve (name, note)
+        O->>O: token = HMAC(secret, run_id, table, fingerprint)
+        O->>W: promote(table, token)
+        W->>W: verify token against the STAGED data, then one transaction
+        W-->>O: rows loaded
+    end

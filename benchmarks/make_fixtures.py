@@ -18,11 +18,12 @@ import sqlite3
 from pathlib import Path
 
 ROOT = Path(__file__).parent / "fixtures"
-rng = random.Random(42)
+rng = random.Random(42)  # noqa: S311 - reproducible test data, not crypto
 FIRST = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Barbara", "Dennis", "Frances", "Ken",
          "Radia", "Edsger", "Katherine", "Donald", "Hedy", "Tim", "Sophie", "Guido", "Anita"]
 LAST = ["Lovelace", "Hopper", "Torvalds", "Hamilton", "Turing", "Liskov", "Ritchie", "Allen",
         "Thompson", "Perlman", "Dijkstra", "Johnson", "Knuth", "Lamarr", "Berners-Lee"]
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 REGIONS = ["east", "East ", "EAST", "west", "West", "north", "North ", "south", "SOUTH"]
 
 
@@ -30,7 +31,7 @@ def _date(day: int) -> str:
     """A date in one of four formats (the same day of 2026)."""
     m, d = 1 + (day // 28) % 12, 1 + day % 28
     return rng.choice([f"2026-{m:02d}-{d:02d}", f"{m:02d}/{d:02d}/2026",
-                       f"{['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]} {d} 2026",
+                       f"{MONTHS[m - 1]} {d} 2026",
                        f"2026-{m:02d}-{d:02d}T10:{d:02d}:00"])
 
 

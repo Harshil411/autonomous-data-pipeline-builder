@@ -1,0 +1,168 @@
+classDiagram
+    direction LR
+
+    class RunHandle {
+        +Workspace ws
+        +Settings settings
+        +ModelClient model
+        +create(request, source_files) RunHandle$
+        +open(run_id) RunHandle$
+        +run() dict
+        +decide(approved, by, note) dict
+        +resume() dict
+    }
+
+    class Orchestrator {
+        <<plain code, no LLM>>
+        +prepare(state) dict
+        +plan(state) dict
+        +build_stage(state) dict
+        +replan(state) dict
+        +validate(state) dict
+        +stage_load(state) dict
+        +approve(state) dict
+        +finish(state) dict
+        +graph(checkpointer) CompiledGraph
+    }
+
+    class AgentContext {
+        +ModelClient model
+        +Budget budget
+        +EventLog events
+        +ToolGateway gateway
+    }
+
+    class Agent {
+        <<abstract>>
+        +str role
+        +str system_prompt
+        +int max_turns = 6
+        +int max_repairs = 2
+        +ask(prompt, output_type, check) BaseModel
+    }
+    class Planner {
+        +plan(request, profiles) PipelinePlan
+        +replan(request, profiles, previous, failed_stage, failure, passed) PipelinePlan
+    }
+    class StageCoder {
+        +write(stage, input_profiles, feedback) StageCode
+    }
+    class Tester {
+        +write_tests(stage, input_profiles, broken) StageTests
+        +execute(stage, code, tests, inputs, job) ExecutionResult
+    }
+    class Debugger {
+        +fix(stage, code, result, tests, input_profiles, history) StageCode
+    }
+    class Validator {
+        +propose(plan, output_profiles, raw_profiles) list~QualityRule~
+        +all_rules(plan, derived) list~QualityRule~
+        +check(rules, datasets, job) list~CheckResult~
+    }
+
+    class ModelClient {
+        <<interface>>
+        +complete(role, system, conversation, output_type, tools) ModelTurn
+        +model_for(role) str
+    }
+    class AnthropicModel
+    class OpenAICompatModel
+    class ScriptedModel
+
+    class ToolGateway {
+        +call(role, server, tool, args) Any
+        +call_qualified(role, name, args) Any
+        +specs_for(role) list~ToolSpec~
+    }
+    class ToolPolicy {
+        +allows(role, server, tool) bool
+        +visible(role) frozenset
+    }
+    class Budget {
+        +check(estimated_tokens)
+        +charge(tokens, usd)
+        +snapshot() dict
+    }
+    class EventLog {
+        +emit(kind, payload) dict
+        +read(path, after) list$
+        +totals(events) dict$
+    }
+    class Redactor {
+        +text(value) str
+        +obj(value) Any
+    }
+
+    class SandboxServer {
+        <<MCP server>>
+        +run_stage()
+        +run_quality()
+        +run_command()
+    }
+    class ArtifactsServer {
+        <<MCP server>>
+        +write_text()
+        +read_text()
+        +store_dataset()
+        +latest_dataset()
+    }
+    class WarehouseServer {
+        <<MCP server>>
+        +stage_table()
+        +write_quarantine()
+        +promote(approval_token)
+        +preview()
+        +describe()
+    }
+    class MemoryServer {
+        <<MCP server, ChromaDB>>
+        +search_fixes()
+        +remember_fix()
+        +search_pipelines()
+        +remember_pipeline()
+    }
+    class GitServer {
+        <<MCP server, mcp-server-git>>
+        +git_add()
+        +git_commit()
+        +git_log()
+    }
+    class DockerSandbox {
+        +run_stage()
+        +run_quality()
+        +run_command(argv)
+    }
+    class ShellPolicy {
+        +check(argv)
+    }
+
+    RunHandle --> Orchestrator : builds per session
+    RunHandle --> ToolGateway : opens
+    Orchestrator *-- Planner
+    Orchestrator *-- StageCoder
+    Orchestrator *-- Tester
+    Orchestrator *-- Debugger
+    Orchestrator *-- Validator
+    Agent <|-- Planner
+    Agent <|-- StageCoder
+    Agent <|-- Tester
+    Agent <|-- Debugger
+    Agent <|-- Validator
+    Agent --> AgentContext
+    AgentContext --> ModelClient
+    AgentContext --> Budget
+    AgentContext --> EventLog
+    AgentContext --> ToolGateway
+    ModelClient <|.. AnthropicModel
+    ModelClient <|.. OpenAICompatModel
+    ModelClient <|.. ScriptedModel
+    ToolGateway --> ToolPolicy : checks every call
+    ToolGateway --> EventLog : logs every call
+    EventLog --> Redactor
+    ToolGateway ..> SandboxServer : MCP
+    ToolGateway ..> ArtifactsServer : MCP
+    ToolGateway ..> WarehouseServer : MCP
+    ToolGateway ..> MemoryServer : MCP
+    ToolGateway ..> GitServer : MCP
+    SandboxServer --> DockerSandbox
+    DockerSandbox --> ShellPolicy

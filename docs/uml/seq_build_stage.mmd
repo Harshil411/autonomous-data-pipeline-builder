@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    participant O as Orchestrator (code)
+    participant T as Tester (code half)
+    participant SB as Sandbox MCP (Docker, no network)
+    participant D as Debugger
+    participant M as Memory MCP (ChromaDB)
+    participant P as Planner
+
+    loop attempt = 1 .. 3 (max_retries_per_stage)
+        O->>T: execute(code, tests) on the SAMPLE
+        T->>SB: run_stage(code, inputs=sample, schema, tests)
+        SB-->>T: ExecutionResult (ok / error / failed tests / quarantined rows)
+        opt sample passed
+            T->>SB: run_stage(code, inputs=full data)
+            SB-->>T: ExecutionResult
+        end
+        alt passed on sample and full data
+            O->>O: stage passed, leave loop
+        else only the tests themselves crashed
+            O->>T: write_tests(broken=...) once, the Debugger never edits tests
+        else failed and attempts remain
+            O->>D: spec, code, exact error, failed tests, what was already tried
+            D->>M: search_fixes(error) [optional tool call]
+            M-->>D: verified fixes of similar errors
+            D-->>O: DebugPatch (diagnosis + whole new code)
+        end
+    end
+    alt stage passed after a debugger fix
+        O->>M: remember_fix(first error, diagnosis) - only verified fixes are stored
+    else stage still failing and a replan is left
+        O->>P: replan(previous plan, failed stage, error, passed stages)
+        P-->>O: revised plan, unchanged passed stages are kept
+    else no replans left
+        O->>O: status failed, write report, stop cleanly
+    end

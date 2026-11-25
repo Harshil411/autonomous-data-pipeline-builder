@@ -1,0 +1,122 @@
+classDiagram
+    direction LR
+
+    class DataRequest {
+        +str request
+        +str expected_result
+        +str target_table
+        +list~str~ quality_rules
+        +BudgetLimits budget
+    }
+    class SourceSpec {
+        +str name
+        +SourceKind kind
+        +str path
+        +str url
+        +str table
+        +dataset() str
+    }
+    class BudgetLimits {
+        +float max_usd
+        +int max_tokens
+        +float max_seconds
+        +int max_retries_per_stage
+        +int max_replans
+        +int max_quality_rounds
+    }
+    class PipelinePlan {
+        +str final_dataset
+        +str target_table
+        +str rationale
+        +execution_order() list~StageSpec~
+        +downstream_of(stage_id) list~str~
+        +producer_of(dataset) str
+    }
+    class StageSpec {
+        +str id
+        +StageKind kind
+        +str description
+        +list~str~ inputs
+        +str language
+    }
+    class TableSchema {
+        +str name
+        +list~str~ primary_key
+        +column(name) ColumnSchema
+    }
+    class ColumnSchema {
+        +str name
+        +DType dtype
+        +bool nullable
+    }
+    class QualityRule {
+        +RuleKind kind
+        +str dataset
+        +str column
+        +float min
+        +float max
+        +str ref_dataset
+        +str origin
+        +id() str
+    }
+    class StageTests {
+        +str stage_id
+    }
+    class StageTest {
+        +str name
+        +str description
+        +str check
+    }
+    class StageCode {
+        +str stage_id
+        +str language
+        +str code
+        +str notes
+    }
+    class ExecutionResult {
+        +bool ok
+        +str error_type
+        +str error
+        +dict rows_in
+        +int rows_out
+        +int rows_quarantined
+        +failed_tests() list~TestOutcome~
+    }
+    class TestOutcome {
+        +str name
+        +bool passed
+        +str detail
+    }
+    class CheckResult {
+        +str rule_id
+        +bool passed
+        +str observed
+        +int failing_rows
+    }
+    class PlanDraft {
+        <<Planner output>>
+        +str final_dataset
+    }
+    class DebugPatch {
+        <<Debugger output: code only>>
+        +str diagnosis
+        +str code
+    }
+    class RuleProposals {
+        <<Validator output>>
+    }
+
+    DataRequest "1" *-- "1..*" SourceSpec
+    DataRequest *-- BudgetLimits
+    PipelinePlan "1" *-- "1..*" SourceSpec
+    PipelinePlan "1" *-- "1..12" StageSpec
+    PipelinePlan *-- "0..*" QualityRule
+    StageSpec *-- TableSchema : output
+    TableSchema "1" *-- "1..*" ColumnSchema
+    StageTests "1" *-- "1..12" StageTest
+    ExecutionResult *-- "0..*" TestOutcome
+    PlanDraft *-- "1..*" StageSpec
+    PlanDraft ..> PipelinePlan : assembled and validated into
+    RuleProposals *-- "0..*" QualityRule
+    DebugPatch ..> StageCode : becomes
+    QualityRule ..> CheckResult : executed by code into

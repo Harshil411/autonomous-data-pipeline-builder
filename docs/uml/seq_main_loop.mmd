@@ -1,0 +1,42 @@
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant O as Orchestrator (code)
+    participant P as Planner
+    participant T as Tester
+    participant C as Stage Coder
+    participant SB as Sandbox MCP (Docker)
+    participant V as Validator
+    participant G as Git / Artifacts MCP
+    participant W as Warehouse MCP
+
+    U->>O: request, sources, expected result
+    O->>O: load sources as text, profile (schema, stats, 5 sample rows)
+    O->>P: request + source profiles
+    P-->>O: PlanDraft (stages with input/output schemas)
+    O->>O: validate plan (inputs exist, no cycles, names)
+    O->>G: commit plan.json
+    loop each stage in dependency order
+        O->>T: stage spec + input profiles (no code)
+        T-->>O: StageTests
+        O->>C: stage spec + input schemas/samples
+        C-->>O: StageCode
+        Note over O,SB: inner build loop: see the second sequence diagram
+        O->>G: commit stage code + tests, store versioned output
+    end
+    O->>V: output profiles + source profiles
+    V-->>O: proposed rules
+    O->>SB: run all rules (schema + request + derived) as code
+    SB-->>O: CheckResults
+    alt a check failed and quality rounds remain
+        O->>C: re-code the producing stage with the failed checks
+    else all checks pass, or rounds exhausted
+        O->>W: stage_table + write_quarantine (production untouched)
+        O-->>U: approval request (rows, quarantine, failed checks, preview)
+        U->>O: approve or reject
+        opt approved
+            O->>W: promote(table, approval token bound to data fingerprint)
+        end
+        O->>G: commit manifest.json
+        O-->>U: run report (plan, stages, retries, quality, rows, cost)
+    end

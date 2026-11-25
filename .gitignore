@@ -26,3 +26,6 @@ runs/
 .DS_Store
 .vscode/
 .idea/
+benchmarks/results/*.json
+!benchmarks/results/.gitkeep
+docs/uml/uml.html

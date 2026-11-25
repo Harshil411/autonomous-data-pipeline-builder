@@ -240,7 +240,7 @@ def test_resume_reruns_only_the_failed_stage_and_its_dependants(env):
 
 
 def test_no_full_dataset_and_no_secret_ever_reaches_a_prompt(env, monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-api03-THIS-MUST-NEVER-LEAK-0123456789")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-" + "api03-THIS-MUST-NEVER-LEAK-0123456789")
     rows = "\n".join(f"{i},Name{i}" for i in range(1, 3000))
     (env["sources"] / "customers.csv").write_text(
         f"customer_id,name\n{rows}\n2999999,ZZ_MARKER_DEEP_ROW\n")
