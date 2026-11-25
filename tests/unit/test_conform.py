@@ -43,6 +43,13 @@ class TestCoerceSeries:
         assert values.iloc[0] == pd.Timestamp("2026-01-05")
         assert bad.tolist() == [False, True, False]
 
+    def test_number_like_text_that_parses_as_an_ancient_date_is_unconvertible(self):
+        # Found in the first live run: "-370.05" parsed as the year -370, which cannot be
+        # held at nanosecond precision and crashed profiling.
+        values, bad = coerce_series(pd.Series(["-370.05", "2026-01-05", "9999-01-01"]), "date")
+        assert bad.tolist() == [True, False, True]
+        assert values.iloc[1] == pd.Timestamp("2026-01-05")
+
     def test_null_like_strings_are_nulls_not_errors(self):
         values, bad = coerce_series(pd.Series(["", "NULL", "nan", "None"]), "integer")
         assert values.isna().all() and not bad.any()

@@ -26,6 +26,8 @@ FALSE_WORDS = {"false", "f", "no", "n", "0"}
 PANDAS_DTYPES = {"string": "string", "integer": "Int64", "float": "Float64",
                  "boolean": "boolean", "date": "datetime64[ns]", "datetime": "datetime64[ns]"}
 MIN_ROWS_FOR_FRACTION_CHECK = 10
+EARLIEST_DATE = pd.Timestamp("1800-01-01")  # plausible range for business data
+LATEST_DATE = pd.Timestamp("2200-12-31")
 
 
 class ConformError(ValueError):
@@ -91,7 +93,11 @@ def coerce_series(s: pd.Series, dtype: str) -> tuple[pd.Series, pd.Series]:
             parsed = pd.to_datetime(text, errors="coerce", format="mixed")
         if getattr(parsed.dt, "tz", None) is not None:
             parsed = parsed.dt.tz_convert("UTC").dt.tz_localize(None)
-        parsed = parsed.astype("datetime64[ns]")
+        # pandas may parse number-like text such as "-370.05" as the year -370. Such
+        # values are not real dates and cannot be held at nanosecond precision, so any
+        # date outside a plausible range counts as unconvertible rather than crashing.
+        implausible = parsed.notna() & ((parsed < EARLIEST_DATE) | (parsed > LATEST_DATE))
+        parsed = parsed.mask(implausible).astype("datetime64[ns]")
         if dtype == "date":
             parsed = parsed.dt.normalize()
         bad = parsed.isna() & ~is_null
