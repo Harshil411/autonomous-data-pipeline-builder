@@ -121,9 +121,9 @@ class FakeSDK:
     def __init__(self, responses):
         self.responses = list(responses)
         self.requests = []
-        self.beta = SimpleNamespace(messages=SimpleNamespace(parse=self._parse))
+        self.beta = SimpleNamespace(messages=SimpleNamespace(create=self._create))
 
-    def _parse(self, **kwargs):
+    def _create(self, **kwargs):
         self.requests.append(kwargs)
         return self.responses.pop(0)
 
@@ -146,8 +146,23 @@ class TestAnthropicModel:
         assert turn.usage.input_tokens == 100 and turn.usage.cache_read_input_tokens == 5
         req = sdk.requests[0]
         assert req["model"] == "claude-sonnet-5-5"
-        assert req["output_format"] is Answer
+        assert req["output_config"]["format"]["type"] == "json_schema"
+        assert "output_format" not in req  # we validate the JSON ourselves (see below)
         assert req["messages"] == [{"role": "user", "content": "question"}]
+
+    def test_invalid_answer_is_kept_for_repair_and_still_charged(self):
+        # Found in the first live run: when the SDK's parse() rejected an answer, the
+        # response (and its token usage) was lost, and the repair request replayed an
+        # empty assistant turn, which the API refuses with a 400.
+        model, sdk = _claude([_response([Block(type="text", text='{"value": "not a number"}')])])
+        turn = model.complete(role="planner", system="s", conversation=Conversation(),
+                              output_type=Answer)
+        assert turn.parsed is None and "value" in turn.parse_error
+        assert turn.usage.input_tokens == 100  # still charged against the budget
+        conv = Conversation()
+        conv.assistant(turn)
+        replayed = AnthropicModel._messages(conv)[0]["content"]
+        assert replayed[0]["text"] == '{"value": "not a number"}'
 
     def test_no_sampling_parameters_are_sent(self):
         # Sampling parameters are rejected on current Claude models; reproducibility comes
@@ -191,6 +206,15 @@ class TestAnthropicModel:
         assert msgs[2] == {"role": "user", "content": [
             {"type": "tool_result", "tool_use_id": "toolu_1", "content": "[]",
              "is_error": False}]}
+
+    def test_empty_text_blocks_are_never_replayed(self):
+        # The API rejects empty text blocks with a 400.
+        from adpb.llm.base import ModelTurn
+        conv = Conversation()
+        conv.assistant(ModelTurn(model="m", raw=[{"type": "text", "text": ""}]))
+        conv.assistant(ModelTurn(model="m", raw=None, text=""))
+        for msg in AnthropicModel._messages(conv):
+            assert all(b.get("text", "x") != "" for b in msg["content"])
 
     def test_refusal_is_raised_not_parsed(self):
         model, _ = _claude([_response([], stop="refusal")])

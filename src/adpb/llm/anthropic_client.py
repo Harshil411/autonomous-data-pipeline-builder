@@ -1,7 +1,11 @@
 """Claude client (primary provider).
 
-Uses ``client.beta.messages.parse(...)`` so the reply is constrained to the agent's
-Pydantic output type and validated by the SDK. Notes on the request we build:
+Uses ``client.beta.messages.create(...)`` with a JSON-schema output format derived from the
+agent's Pydantic output type (``anthropic.transform_schema``), then validates the reply in
+our own code. We deliberately do not use the SDK's ``parse()`` helper: when its validation
+fails it raises before returning the response, which loses both the model's answer (needed
+to ask for a precise repair) and the token usage (needed to charge the budget). Both bugs
+showed up in the first live run. Notes on the request we build:
 
 * No ``temperature``/``top_p``: current Claude models reject sampling parameters.
   Reproducibility therefore comes from *freezing the code that passed* in git and
@@ -81,7 +85,11 @@ class AnthropicModel:
                 turn = m["turn"]
                 content = turn.raw if turn.raw is not None else [{"type": "text",
                                                                   "text": turn.text}]
-                out.append({"role": "assistant", "content": content})
+                # The API rejects empty text blocks; keep everything else verbatim.
+                content = [b for b in content if not (b.get("type") == "text"
+                                                      and not b.get("text"))]
+                out.append({"role": "assistant",
+                            "content": content or [{"type": "text", "text": "(no answer)"}]})
             else:  # all tool results of one turn go back in ONE user message
                 out.append({"role": "user", "content": [
                     {"type": "tool_result", "tool_use_id": r.call_id, "content": r.content,
@@ -111,8 +119,9 @@ class AnthropicModel:
             "max_tokens": max_tokens,
             "system": [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
             "messages": self._messages(conversation),
-            "output_format": output_type,
-            "output_config": {"effort": self.effort.get(role, "medium")},
+            "output_config": {"effort": self.effort.get(role, "medium"),
+                              "format": {"type": "json_schema",
+                                         "schema": self._schema(output_type)}},
             "betas": [],
         }
         if tools:
@@ -124,11 +133,7 @@ class AnthropicModel:
             del request["betas"]
 
         try:
-            resp = self._sdk.beta.messages.parse(**request)
-        except ValidationError as exc:
-            # The SDK validated the JSON against our model and our own validators objected
-            # (e.g. a plan with a cycle). Hand it back so the agent can ask for a repair.
-            return ModelTurn(model=model, parse_error=str(exc), stop_reason="end_turn")
+            resp = self._sdk.beta.messages.create(**request)
         except Exception as exc:  # network/auth/5xx after the SDK's own retries
             if type(exc).__module__.startswith("anthropic"):
                 raise ModelUnavailable(f"{type(exc).__name__}: {exc}") from exc
@@ -154,13 +159,30 @@ class AnthropicModel:
                        if getattr(b, "type", None) == "text")
         calls = [ToolCall(id=b.id, name=b.name, arguments=dict(b.input))
                  for b in resp.content if getattr(b, "type", None) == "tool_use"]
-        parsed = getattr(resp, "parsed_output", None)
+        parsed, parse_error = None, None
+        if not calls:
+            try:
+                parsed = output_type.model_validate_json(text)
+            except (ValidationError, ValueError) as exc:
+                # Kept, not raised: the agent loop sends this error back for a repair,
+                # replaying the model's own answer (raw) so it can see what it wrote.
+                parse_error = str(exc)
         return ModelTurn(
             model=getattr(resp, "model", model) or model,
             text=text,
             tool_calls=calls,
-            parsed=parsed if not calls else None,
+            parsed=parsed,
+            parse_error=parse_error,
             usage=usage,
             stop_reason=resp.stop_reason,
             raw=raw,
         )
+
+    @staticmethod
+    def _schema(output_type: type[BaseModel]) -> dict[str, Any]:
+        """The output type as a JSON schema the API accepts (unsupported keywords such as
+        ``pattern`` or ``maxItems`` are moved into descriptions; Pydantic still enforces
+        them when we validate the reply)."""
+        import anthropic
+
+        return anthropic.transform_schema(output_type)
