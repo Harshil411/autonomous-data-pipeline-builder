@@ -83,6 +83,24 @@ def look_switch() -> None:
     st.html(_SWITCH_JS % (json.dumps(want), json.dumps(_PATHS)), unsafe_allow_javascript=True)
 
 
+# The logo: two sources merging into one result, which is what the product builds. It is
+# drawn as line art in the maroon-to-orange accent (colours come from the stylesheet, so
+# it suits both looks) instead of sitting in a filled square.
+LOGO = (
+    '<svg class="logo" aria-hidden="true" viewBox="0 0 28 28" width="28" height="28">'
+    '<defs><linearGradient id="logo-ink" gradientUnits="userSpaceOnUse" x1="3" y1="14" '
+    'x2="25" y2="14"><stop class="l1" offset="0"/><stop class="l2" offset="1"/>'
+    '</linearGradient></defs>'
+    '<path d="M4.5 7.5H9C14 7.5 13 14 18 14H21.5M4.5 20.5H9C14 20.5 13 14 18 14"/>'
+    '<circle cx="4.5" cy="7.5" r="2.2"/><circle cx="4.5" cy="20.5" r="2.2"/>'
+    '<circle class="out" cx="22.5" cy="14" r="3.4"/></svg>')
+
+
+def wordmark() -> str:
+    """The logo and the product name, as markup for the header."""
+    return f'<span class="wordmark">{LOGO}Pipeline Builder</span>'
+
+
 def page_title(title: str, subtitle: str = "") -> None:
     """The heading of a page that is not a run: one sentence, one supporting line."""
     sub = f"<p>{escape(subtitle)}</p>" if subtitle else ""

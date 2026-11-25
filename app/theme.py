@@ -125,8 +125,12 @@ code, pre { font-family: 'Geist Mono', ui-monospace, Menlo, monospace !important
 /* ---- header: wordmark and page links ----------------------------------------------- */
 .wordmark { display: inline-flex; align-items: center; gap: .6rem; font-size: 1.08rem;
   font-weight: 600; color: var(--text); }
-.wordmark i { width: 22px; height: 22px; border-radius: 6px;
-  background: linear-gradient(135deg, var(--grad-1), var(--grad-2)); }
+.wordmark .logo { flex: none; width: 30px; height: 30px; fill: none; stroke: url(#logo-ink); stroke-width: 2.4;
+  stroke-linecap: round; stroke-linejoin: round; }
+.wordmark .logo circle { fill: var(--grad-1); stroke: none; }
+.wordmark .logo circle.out { fill: var(--grad-2); }
+.wordmark .logo stop.l1 { stop-color: var(--grad-1); }
+.wordmark .logo stop.l2 { stop-color: var(--grad-2); }
 [data-testid="stPageLink"] a { border-radius: 999px; padding: .25rem .8rem;
   justify-content: flex-end; }
 [data-testid="stPageLink"] a p { color: var(--muted); font-size: .95rem; }

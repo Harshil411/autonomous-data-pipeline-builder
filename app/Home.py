@@ -17,7 +17,7 @@ load_dotenv(ROOT / ".env")
 st.set_page_config(page_title="Pipeline Builder", layout="wide",
                    initial_sidebar_state="collapsed")
 
-from app.components import look_switch, setup_page  # noqa: E402
+from app.components import look_switch, setup_page, wordmark  # noqa: E402
 
 setup_page()
 PAGES = [
@@ -31,7 +31,7 @@ current = st.navigation(PAGES, position="hidden")
 # Our own header: the wordmark on the left, one quiet link per page on the right.
 # (Streamlit's built-in top nav sits under its toolbar, which hid it on a 13-inch laptop.)
 cols = st.columns([4.4, 0.7, 1, 1.1, 1.2, 0.85], vertical_alignment="center")
-cols[0].markdown('<span class="wordmark"><i></i>Pipeline Builder</span>', unsafe_allow_html=True)
+cols[0].markdown(wordmark(), unsafe_allow_html=True)
 for col, page in zip(cols[1:5], PAGES, strict=True):
     col.page_link(page, label=page.title)
 with cols[5]:

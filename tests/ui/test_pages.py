@@ -114,3 +114,11 @@ def test_header_offers_a_switch_between_the_two_looks(home):
     at = AppTest.from_file(str(PAGES.parent / "Home.py"), default_timeout=30).run()
     assert not at.exception
     assert at.button(key="look").label == "Light"   # the look it would switch to
+
+
+def test_header_carries_the_logo_and_the_name(home):
+    at = AppTest.from_file(str(PAGES.parent / "Home.py"), default_timeout=30).run()
+    mark = next(m.value for m in at.markdown if 'class="wordmark"' in m.value)
+    # the mark is a drawing of the product: two sources merging into one result
+    assert '<svg class="logo"' in mark and 'aria-hidden="true"' in mark
+    assert "Pipeline Builder" in mark
