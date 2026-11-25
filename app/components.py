@@ -1,15 +1,14 @@
 """Rendering pieces shared by the pages. Every function takes a `RunView` (or plain data)
 and draws it; none of them talks to the pipeline directly.
 
-Layout of a run (designed to be read from across a table, on one laptop screen):
+Layout of a run (one headline, one picture, detail on request):
 
-    Now banner      who is doing what, in one sentence
-    [approval gate  only while a run waits for a person]
-    stats strip     stages, retries, calls, tokens, cost of budget, time
-    agent lane      the five agents; the one working is filled
-    schematic       sources -> stages -> final table
-    activity | stage focus (tests passing/failing, attempts, code)
-    details         data quality, cost, budget, report
+    journey         Describe / Build / Approve, with the current step lit
+    hero            one status tag, one headline, one supporting line, time and cost
+    [approval gate  only while a run waits for a person: the proof, the buttons, a preview]
+    live graph      sources -> stages -> your approval -> database, with the Orchestrator
+                    and the five agents underneath (app/graph.py)
+    details         tabs: activity, stage detail, data quality, cost, budget, report
 """
 
 from __future__ import annotations
@@ -21,17 +20,18 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from app.schematic import render_schematic
+from app.graph import render_graph
 from app.theme import AGENT_COLORS, CSS
-from app.viewmodel import RunView, agent_label, agent_states, now_line, summary_numbers
+from app.viewmodel import RunView, agent_label, hero, journey_step, proofs
 
 STATUS_WORDS = {"running": "Working", "awaiting_approval": "Waiting for your approval",
                 "succeeded": "Loaded", "failed": "Failed", "rejected": "Rejected",
                 "budget_exceeded": "Stopped at budget", "not started": "Not started"}
 MARKS = {"good": "&#10003;", "bad": "&#10007;", "wait": "&#9679;", "neutral": ""}
-LANE_NOTES = {"planner": "designs the stages", "tester": "writes tests first",
-              "coder": "writes stage code", "debugger": "fixes failing code",
-              "validator": "proposes quality rules"}
+STEPS = ("Describe", "Build", "Approve")
+TICK = ('<svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" '
+        'stroke="{color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
+        '<path d="{path}"/></svg>')
 
 
 def html(markup: str) -> None:
@@ -42,60 +42,47 @@ def setup_page() -> None:
     html(CSS)
 
 
-def brand_header(subtitle: str) -> None:
-    """One sentence under the shared header band saying what this page is for."""
-    html(f'<p class="intro">{escape(subtitle)}</p>')
+def page_title(title: str, subtitle: str = "") -> None:
+    """The heading of a page that is not a run: one sentence, one supporting line."""
+    sub = f"<p>{escape(subtitle)}</p>" if subtitle else ""
+    html(f'<div class="page-title"><h1>{escape(title)}</h1>{sub}</div>')
 
 
-def status_pill(status: str) -> str:
-    cls = status if status in STATUS_WORDS and status != "not started" else "not"
-    return f'<span class="pill {cls}">{STATUS_WORDS.get(status, status)}</span>'
+def journey(step: int, done: bool = False) -> None:
+    """The three steps of the visit, with the current one lit. `done` turns the last step
+    green once the data is loaded."""
+    items = "".join(
+        f'<li class="{"on" if i == step else "past" if i < step else ""}">{i} '
+        f'{"Approved" if done and i == 3 else name}</li>'
+        for i, name in enumerate(STEPS, start=1))
+    html(f'<nav class="steps{" done" if done else ""}" aria-label="Steps"><ol>{items}</ol></nav>')
 
 
 # -- the top of a run ----------------------------------------------------------------------
 
 
-def now_banner(v: RunView, live: bool) -> None:
-    agent, text = now_line(v)
-    tone = {"succeeded": "done", "awaiting_approval": "wait", "failed": "stopped",
-            "budget_exceeded": "stopped", "rejected": "stopped"}.get(v.status, "")
-    color = AGENT_COLORS.get(agent, "#6B7180")
-    mode = "" if live or v.finished else '<span class="mode">replay</span>'
-    html(f'<div class="now {tone}" style="--agent:{color}"><span class="live"></span>'
-         f'<span class="who">{agent_label(agent)}</span>'
-         f'<span class="what">{escape(text)}</span>{mode}</div>')
-    if v.request:
-        html(f'<p class="request" title="{escape(v.request)}">{escape(v.request)}</p>')
+def _clock(seconds: float) -> str:
+    return f"{int(seconds) // 60}:{int(seconds) % 60:02d}"
 
 
-def stats_strip(v: RunView) -> None:
-    n = summary_numbers(v)
+def run_hero(v: RunView, live: bool) -> None:
+    """Status tag, headline, supporting line, and the two numbers people ask about."""
+    h = hero(v)
     limit = v.budget_limits.get("max_usd")
-    cost = f"{n['cost']} of ${limit:.2f}" if limit else n["cost"]
-    items = [(n["stages"], "stages passed"), (n["retries"], "retries"),
-             (n["calls"], "model calls"), (n["tokens"], "tokens"), (cost, "spent"),
-             (n["elapsed"], "elapsed")]
-    html('<div class="strip">' + "".join(f"<span><b>{val}</b>{lab}</span>"
-                                         for val, lab in items) + "</div>")
+    cost = f"<b>${v.cost['usd']:.2f}</b>" + (f" of ${limit:.2f}" if limit else "")
+    replay = "" if live or v.finished else '<span class="tag replay">Replay</span>'
+    html(f'<div class="hero {h["tone"]}"><div class="main">'
+         f'<span class="tag"><i></i>{escape(h["pill"])}</span>{replay}'
+         f'<h1>{escape(h["headline"])}</h1></div>'
+         f'<div class="side"><p>{escape(h["sub"])}</p>'
+         f'<div class="meta"><span><b>{_clock(v.elapsed)}</b> of work</span>'
+         f'<span>{cost}</span></div></div></div>')
 
 
-def agent_lane(v: RunView) -> None:
-    states = agent_states(v)
-    cells = []
-    for agent, state in states.items():
-        word = {"working": "working now", "done": "has worked", "idle": "not yet"}[state]
-        calls = v.cost["by_agent"].get(agent, {}).get("calls", 0)
-        detail = f"{word}, {calls} call{'s' if calls != 1 else ''}" if calls else word
-        cells.append(f'<div class="a {state}" style="--agent:{AGENT_COLORS[agent]}">'
-                     f'<div class="n">{agent_label(agent)}</div>'
-                     f'<div class="s">{LANE_NOTES[agent]}<br>{detail}</div></div>')
-    html('<div class="lane">' + "".join(cells) + "</div>")
-
-
-def schematic(v: RunView) -> None:
-    if not v.stages and not v.sources:
-        return
-    html(f'<div class="sch-wrap">{render_schematic(v)}</div>')
+def graph(v: RunView) -> None:
+    svg = render_graph(v)
+    if svg:
+        html(f'<div class="graph-wrap">{svg}</div>')
 
 
 # -- activity --------------------------------------------------------------------------------
@@ -120,40 +107,56 @@ def activity_rows(v: RunView, limit: int) -> None:
 
 
 def approval_gate(v: RunView, live: bool, on_decide=None, replay_note: str = "") -> None:
+    """Shown only while a run waits for a person. Left: the evidence and the two buttons.
+    Right: the first rows of what would be loaded. The decision is passed to `on_decide`;
+    nothing here writes to the database."""
     req = v.approval_request
     if not req or v.load or v.approval:
-        return  # nothing to decide (the banner already states any outcome)
+        return  # nothing to decide (the headline already states any outcome)
+    p = proofs(v)
     failed = req.get("failed_checks") or []
+    good = TICK.format(color="#7FD1AE", path="M5 12.5l4.5 4.5L19 7")
+    warn = TICK.format(color="#FFB37A",
+                       path="M12 7v6M12 17h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0")
     existing = req.get("existing_production_rows")
-    replace = f"replaces {existing:,} existing rows" if existing else "creates the table"
-    checks = (f"{len(failed)} quality check(s) failed - read them below before deciding"
-              if failed else "every quality check passed")
-    html(f'<div class="gate"><h3>Nothing has been written to {escape(req["table"])} yet</h3>'
-         f'<p>The result is in a staging table. Loading it {replace}; {checks}.</p>'
-         f'<div class="facts"><div><b>{req["rows"]:,}</b>rows to load</div>'
-         f'<div><b>{req.get("quarantine_rows", 0):,}</b>rows set aside, each with a reason</div>'
-         f'<div><b>{len(failed)}</b>failed checks</div></div></div>')
-    if failed:
-        st.warning("Still failing: " + ", ".join(failed))
-    if not live or on_decide is None:
-        st.caption(replay_note or "Open this run in Runs and replay to decide.")
-        return
-    with st.form(f"gate-{v.run_id}", border=False):
-        c0, c1, c2 = st.columns([2, 2, 2], vertical_alignment="bottom")
-        who = c0.text_input("Your name", value=st.session_state.get("approver", ""),
-                            placeholder="Recorded with the decision")
-        approve = c1.form_submit_button(f"Load {req['rows']:,} rows into {req['table']}",
-                                        type="primary", use_container_width=True)
-        reject = c2.form_submit_button("Reject and keep production as it is",
-                                       use_container_width=True)
-        note = st.text_input("Note (optional)")
-    with st.expander("Preview the first rows"):
-        if req.get("preview"):
-            st.dataframe(pd.DataFrame(req["preview"]), hide_index=True,
-                         use_container_width=True)
-    if approve or reject:
-        st.session_state["approver"] = who
-        on_decide(bool(approve), who or "booth visitor", note)
+    replace = (f"Loading replaces {existing:,} existing rows." if existing
+               else f"Loading creates the table {req['table']}.")
+    checks = (f'<li class="warn">{warn}{len(failed)} of {p["checks_total"]} quality checks '
+              f'failed</li>'
+              if failed else
+              f'<li>{good}{p["checks_passed"]} of {p["checks_total"]} quality checks passed</li>')
+    with st.container(key="gate"):
+        left, right = st.columns([1, 1.25], gap="large", vertical_alignment="center")
+        with left:
+            html(f'<ul class="proofs"><li>{good}{p["tests_passed"]} of {p["tests_total"]} tests '
+                 f'passed in the sandbox</li>{checks}'
+                 f'<li class="warn">{warn}{p["set_aside"]:,} rows set aside, each with a reason'
+                 f'</li></ul>')
+            if failed:
+                st.warning("Still failing: " + ", ".join(failed))
+            if not live or on_decide is None:
+                st.caption(replay_note or "Open this run in Past runs to decide.")
+            else:
+                with st.form(f"gate-{v.run_id}", border=False):
+                    who = st.text_input("Your name",
+                                        value=st.session_state.get("approver", ""),
+                                        placeholder="Recorded with the decision")
+                    note = st.text_input("Note (optional)")
+                    c1, c2 = st.columns([1.6, 1])
+                    approve = c1.form_submit_button(f"Approve and load {req['rows']:,} rows",
+                                                    type="primary", width="stretch")
+                    reject = c2.form_submit_button("Reject", width="stretch")
+                html(f'<p class="fine">{replace} Your approval is tied to these exact rows. '
+                     f'No agent can load data on its own.</p>')
+                if approve or reject:
+                    st.session_state["approver"] = who
+                    on_decide(bool(approve), who or "booth visitor", note)
+        with right:
+            preview = req.get("preview") or []
+            html(f'<div class="peek"><b>{escape(req["table"])}</b><span>first {len(preview)} of '
+                 f'{req["rows"]:,} rows, staged and not loaded</span></div>')
+            if preview:
+                st.dataframe(pd.DataFrame(preview), hide_index=True, width="stretch")
 
 
 # -- one stage, in focus ----------------------------------------------------------------------
@@ -223,7 +226,7 @@ def stage_focus(v: RunView) -> None:
         st.dataframe(pd.DataFrame([{"column": c["name"], "type": c["dtype"],
                                     "required": "yes" if not c.get("nullable", True) else "no"}
                                    for c in s.output["columns"]]),
-                     hide_index=True, use_container_width=True)
+                     hide_index=True, width="stretch")
 
 
 # -- details below the fold --------------------------------------------------------------------
@@ -244,7 +247,7 @@ def quality_panel(v: RunView) -> None:
         "from": {"schema": "output contract", "request": "your request",
                  "derived": "Validator (advisory)"}.get(origin.get(c["rule_id"], ""), ""),
         "observed": c["observed"], "failing rows": c["failing_rows"]} for c in rnd["checks"]]),
-        hide_index=True, use_container_width=True)
+        hide_index=True, width="stretch")
 
 
 def cost_panel(v: RunView) -> None:
@@ -269,7 +272,7 @@ def cost_panel(v: RunView) -> None:
     st.dataframe(pd.DataFrame([{"agent": agent_label(k), "model": v.models.get(k, ""),
                                 "calls": a["calls"], "tokens": a["tokens"],
                                 "cost ($)": round(a["usd"], 5)} for k, a in by.items()]),
-                 hide_index=True, use_container_width=True)
+                 hide_index=True, width="stretch")
 
 
 def budget_meters(v: RunView) -> None:
@@ -307,31 +310,26 @@ def report_panel(run_root: Path) -> None:
 
 def run_dashboard(v: RunView, run_root: Path, live: bool, on_decide=None,
                   replay_note: str = "") -> None:
-    now_banner(v, live)
+    journey(journey_step(v), done=bool(v.load))
+    run_hero(v, live)
     approval_gate(v, live, on_decide, replay_note)
-    stats_strip(v)
-    agent_lane(v)
-    schematic(v)
-    left, right = st.columns(2, gap="large")
-    with left:
-        html('<div class="panel-title">What just happened</div>')
-        activity_rows(v, limit=7)
-        with st.expander(f"Full activity log ({len(v.activity)} entries)"):
-            activity_rows(v, limit=500)
-    with right:
-        html('<div class="panel-title">Stage in focus</div>')
-        stage_focus(v)
+    graph(v)
     if v.error and v.status in ("failed", "budget_exceeded"):
         st.error(v.error)
-    html('<div class="panel-title details">Details</div>')
-    tabs = st.tabs(["Data quality", "Cost", "Budget", "Report"])
+    tabs = st.tabs(["Activity", "Stage detail", "Data quality", "Cost", "Budget", "Report"])
     with tabs[0]:
-        quality_panel(v)
+        activity_rows(v, limit=8)
+        with st.expander(f"Full activity log ({len(v.activity)} entries)"):
+            activity_rows(v, limit=500)
     with tabs[1]:
-        cost_panel(v)
+        stage_focus(v)
     with tabs[2]:
-        budget_meters(v)
+        quality_panel(v)
     with tabs[3]:
+        cost_panel(v)
+    with tabs[4]:
+        budget_meters(v)
+    with tabs[5]:
         report_panel(run_root)
 
 

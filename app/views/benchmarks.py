@@ -9,14 +9,15 @@ import pandas as pd
 import streamlit as st
 
 from adpb.config import REPO_ROOT
-from app.components import brand_header, html
+from app.components import html, page_title
 
 RESULTS = REPO_ROOT / "benchmarks" / "results"
 
 
 def main() -> None:
-    brand_header("Eight dirty-data requests, scored on invariants of the final table - not on "
-                 "whether the run merely finished.")
+    page_title("Eight dirty-data requests, scored on the final table",
+               "A run counts as a success only if the loaded table holds the right rows, not "
+               "merely because it finished.")
     files = sorted(RESULTS.glob("bench-*.json"), reverse=True) if RESULTS.exists() else []
     if not files:
         st.info("No benchmark results yet. Run `uv run adpb bench` (it calls the model and "
@@ -40,7 +41,7 @@ def main() -> None:
         "why": r["why"], "rows": r["rows"], "stages": r["stages"],
         "retries": sum(r["retries"].values()), "replans": r["replans"],
         "seconds": r["seconds"], "cost ($)": r["usd"]} for r in report["runs"]]),
-        hide_index=True, use_container_width=True)
+        hide_index=True, width="stretch")
 
     # One measure, one series, one axis: cost per run.
     top = max((r["usd"] for r in report["runs"]), default=0) or 1

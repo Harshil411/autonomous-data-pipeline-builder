@@ -1,6 +1,6 @@
 """Streamlit entry point:  uv run streamlit run app/Home.py
 
-Four pages: build a pipeline (live), past runs (with replay), benchmarks, and how it works.
+Four pages: Build (describe, watch, approve), Past runs (replay), Benchmarks, How it works.
 """
 
 import sys
@@ -21,18 +21,17 @@ from app.components import setup_page  # noqa: E402
 
 setup_page()
 PAGES = [
-    st.Page("views/build.py", title="Build a pipeline", default=True),
-    st.Page("views/runs.py", title="Runs and replay"),
+    st.Page("views/build.py", title="Build", default=True),
+    st.Page("views/runs.py", title="Past runs"),
     st.Page("views/benchmarks.py", title="Benchmarks"),
     st.Page("views/how_it_works.py", title="How it works"),
 ]
 current = st.navigation(PAGES, position="hidden")
 
-# Our own header band: the wordmark plus one link per page (Streamlit's top nav sits
-# under its toolbar, which hid it on a 13-inch laptop).
-cols = st.columns([2.2, 1.2, 1.2, 1, 1], vertical_alignment="center")
-cols[0].markdown('<span class="wordmark">Pipeline Builder</span>', unsafe_allow_html=True)
+# Our own header: the wordmark on the left, one quiet link per page on the right.
+# (Streamlit's built-in top nav sits under its toolbar, which hid it on a 13-inch laptop.)
+cols = st.columns([5, 0.7, 1, 1.1, 1.2], vertical_alignment="center")
+cols[0].markdown('<span class="wordmark"><i></i>Pipeline Builder</span>', unsafe_allow_html=True)
 for col, page in zip(cols[1:], PAGES, strict=True):
     col.page_link(page, label=page.title)
-st.markdown('<div class="band"></div>', unsafe_allow_html=True)
 current.run()

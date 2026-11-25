@@ -1,18 +1,37 @@
+# The "Night" theme. Our own markup is styled in app/theme.py; these values make Streamlit's
+# built-in widgets (inputs, tables, tabs) match it.
 [theme]
-base = "light"
-primaryColor = "#861F41"
-backgroundColor = "#F4F5F7"
-secondaryBackgroundColor = "#FFFFFF"
-textColor = "#1D2027"
-# Atkinson Hyperlegible Next: designed for legibility (a laptop read from a metre away).
-# Without internet at the booth the browser falls back to its system sans-serif.
-font = "Atkinson Hyperlegible Next:https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700&display=swap"
-codeFont = "JetBrains Mono:https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
+base = "dark"
+primaryColor = "#FF8A3D"
+backgroundColor = "#09090B"
+secondaryBackgroundColor = "#131316"
+textColor = "#EDEDEF"
+borderColor = "#34343B"
+linkColor = "#FFB37A"
+baseRadius = "0.7rem"
+showWidgetBorder = true
+# Geist and Geist Mono are bundled in app/static/ (SIL Open Font License), so the booth
+# laptop needs no internet. The browser falls back to its system fonts if they fail to load.
+font = "Geist, -apple-system, 'Helvetica Neue', Arial, sans-serif"
+codeFont = "'Geist Mono', ui-monospace, Menlo, monospace"
 baseFontSize = 16
+
+[[theme.fontFaces]]
+family = "Geist"
+url = "app/static/Geist.woff2"
+weight = "100 900"
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Geist Mono"
+url = "app/static/GeistMono.woff2"
+weight = "100 900"
+style = "normal"
 
 [server]
 headless = true
 runOnSave = false
+enableStaticServing = true
 
 [browser]
 gatherUsageStats = false

@@ -63,7 +63,7 @@ def test_empty_log_is_an_empty_view():
     assert v.status == "not started" and v.stages == {} and v.activity == []
 
 
-# -- the "now" line and the agent lane (what a visitor reads from across the table) -------
+# -- the "now" line and the agents' states (the headline and the graph are built on them) ---
 
 
 def _cut_after(events, pred):

@@ -77,7 +77,8 @@ def test_approval_gate_loads_the_data_when_approved(home, paused_run):
 def test_runs_page_lists_the_run_and_renders_it(home, paused_run):
     at = AppTest.from_file(str(PAGES / "runs.py"), default_timeout=30).run()
     assert not at.exception
-    assert any(b.key == f"pick-{paused_run.ws.run_id}" for b in at.button)
+    # runs are picked from one dropdown, so the graph keeps the full width of the screen
+    assert at.selectbox(key="selected_run").value == paused_run.ws.run_id
     assert any(b.label == "Replay this run" for b in at.button)
     # the run is drawn as the live graph, with the gate asking for a person
     assert any('class="node gate needed"' in m.value for m in at.markdown)

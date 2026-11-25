@@ -1,5 +1,5 @@
-"""Runs and replay: every recorded run, one click away. Replay a run's recording, decide a
-paused run, resume a failed one, or re-run a finished one with no model (requirement 18)."""
+"""Past runs: every recorded run, one dropdown away. Replay a run's recording, decide a
+paused run, resume a failed one, or rebuild a finished one with no model (requirement 18)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import streamlit as st
 
 from adpb.config import load_settings
 from adpb.observability.events import EventLog
-from app.components import STATUS_WORDS, brand_header, run_dashboard
+from app.components import STATUS_WORDS, page_title, run_dashboard
 from app.state import manager
 from app.viewmodel import build_view
 
@@ -44,19 +44,19 @@ def list_runs() -> list[dict]:
 
 
 def run_picker(runs: list[dict]) -> str:
-    selected = st.session_state.get("selected_run")
-    if selected not in {r["run"] for r in runs}:
-        selected = runs[0]["run"]
-    with st.container(key="runlist", height=720, border=False):
-        for r in runs:
-            word = STATUS_WORDS.get(r["status"], r["status"])
-            label = f"**{word}**, {r['when']}  \n{r['detail'] or r['request'][:48]}"
-            if st.button(label, key=f"pick-{r['run']}", use_container_width=True,
-                         type="primary" if r["run"] == selected else "secondary"):
-                st.session_state["selected_run"] = r["run"]
-                st.session_state.pop("replaying", None)
-                st.rerun()
-    return selected
+    """One dropdown, newest run first. A list down the side would take a quarter of the
+    screen away from the graph, which has to be readable from across the table."""
+    by_id = {r["run"]: r for r in runs}
+    if st.session_state.get("selected_run") not in by_id:
+        st.session_state["selected_run"] = runs[0]["run"]
+
+    def label(run_id: str) -> str:
+        r = by_id[run_id]
+        word = STATUS_WORDS.get(r["status"], r["status"])
+        return ", ".join(x for x in (word, r["when"], r["detail"] or r["request"][:48]) if x)
+
+    return st.selectbox("Run", list(by_id), format_func=label, key="selected_run",
+                        on_change=lambda: st.session_state.pop("replaying", None))
 
 
 @st.fragment(run_every=0.6)
@@ -84,11 +84,17 @@ def live(run_id: str) -> None:
     run_dashboard(view, root, live=True, on_decide=decide)
 
 
-def actions(run_id: str, view) -> None:
+def actions(runs: list[dict]) -> tuple[str, list[dict], object]:
+    """The control row: which run, replay and its speed, resume, rebuild with no model.
+    Returns the chosen run, its events and its view."""
+    c0, c1, c2, c3, c4 = st.columns([2.5, 1.1, 1.5, 1.5, 1.3], vertical_alignment="bottom")
+    with c0:
+        run_id = run_picker(runs)
     root = settings.runs_dir / run_id
-    c1, c2, c3, c4 = st.columns([1.2, 1.3, 1.4, 1.4], vertical_alignment="bottom")
+    events = EventLog.read(root / "events.jsonl")
+    view = build_view(events)
     replaying = st.session_state.get("replaying") == run_id
-    if c1.button("Stop replay" if replaying else "Replay this run", use_container_width=True):
+    if c1.button("Stop replay" if replaying else "Replay this run", width="stretch"):
         if replaying:
             st.session_state.pop("replaying")
         else:
@@ -98,11 +104,11 @@ def actions(run_id: str, view) -> None:
     st.session_state["replay-speed"] = c2.segmented_control(
         "Replay speed", [1, 2, 4, 8], default=st.session_state.get("replay-speed", 4),
         format_func=lambda x: f"{x}x", key="speed") or 4
-    if c3.button("Resume from the failed stage", use_container_width=True,
+    if c3.button("Resume from the failed stage", width="stretch",
                  disabled=view.status not in ("failed", "budget_exceeded")):
         manager().resume(run_id)
         st.rerun()
-    if c4.button("Re-run with no model", use_container_width=True,
+    if c4.button("Rebuild with no model", width="stretch",
                  disabled=not (root / "pipeline" / "manifest.json").exists(),
                  help="Rebuilds every stage from the sources with the code committed to git "
                       "and checks the result is identical."):
@@ -117,29 +123,26 @@ def actions(run_id: str, view) -> None:
         else:
             st.error(f"The re-run differs: got {result['fingerprint']}, expected "
                      f"{result['expected']}.")
+    return run_id, events, view
 
 
 def main() -> None:
-    brand_header("Every run is recorded event by event. Pick one to replay it, decide it, "
-                 "or re-run it with no model to show it is reproducible.")
     runs = list_runs()
     if not runs:
-        st.info("No runs yet. Start one on the Build a pipeline page.")
+        page_title("Every run is recorded, step by step",
+                   "Nothing has run yet. Start one on the Build page, then come back here to "
+                   "replay it or rebuild it with no model.")
         return
-    left, right = st.columns([1.05, 3.2], gap="large")
-    with left:
-        run_id = run_picker(runs)
-    with right:
-        root = settings.runs_dir / run_id
-        events = EventLog.read(root / "events.jsonl")
-        view = build_view(events)
-        actions(run_id, view)
-        if st.session_state.get("replaying") == run_id and events:
-            replay(run_id, events)
-        elif view.status in ("running", "awaiting_approval") or manager().busy(run_id):
-            live(run_id)
-        else:
-            run_dashboard(view, root, live=False)
+    # No page heading once there is a run to show: the controls explain themselves, and
+    # the graph needs the height to fit on one laptop screen.
+    run_id, events, view = actions(runs)
+    root = settings.runs_dir / run_id
+    if st.session_state.get("replaying") == run_id and events:
+        replay(run_id, events)
+    elif view.status in ("running", "awaiting_approval") or manager().busy(run_id):
+        live(run_id)
+    else:
+        run_dashboard(view, root, live=False)
 
 
 main()

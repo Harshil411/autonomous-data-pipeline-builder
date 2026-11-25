@@ -123,3 +123,11 @@ def test_proofs_count_tests_checks_and_rows_set_aside(recorded):
     assert p["tests_total"] > 0 and p["tests_passed"] == p["tests_total"]
     assert p["checks_total"] > 0 and p["checks_passed"] <= p["checks_total"]
     assert p["set_aside"] == _at_gate(recorded).approval_request.get("quarantine_rows", 0)
+
+
+def test_hero_at_the_gate_does_not_hide_a_failed_quality_check(recorded):
+    events = _cut_after(recorded, lambda e: e["kind"] == "approval_requested")
+    events[-1] = {**events[-1], "failed_checks": ["clean_orders.customer_id.foreign_key"]}
+    h = hero(build_view(events))
+    assert h["headline"] == "4 rows are staged, but 1 quality check failed"
+    assert "Read the failed check" in h["sub"]

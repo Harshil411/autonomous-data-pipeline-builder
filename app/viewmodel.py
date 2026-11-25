@@ -297,3 +297,96 @@ def agent_states(v: RunView) -> dict[str, str]:
     live = v.status == "running"
     return {a: "working" if live and a == active else
             "done" if a in v.cost["by_agent"] else "idle" for a in LANE}
+
+
+# -- the redesigned run screen: one headline, the journey, and the proof at the gate ----------
+
+# What each agent is allowed to see or do, said in one line under the headline. These are
+# the guardrails from the README, phrased for a visitor.
+_LIMITS = {
+    "planner": "It splits the request into stages with fixed schemas. It never touches data.",
+    "coder": "It sees one stage and five sample rows, never the full data.",
+    "debugger": "It may change the code, never the test.",
+    "validator": "It proposes quality rules. Code decides pass or fail, not a model.",
+    "orchestrator": "Agents get column names and five sample rows, never the full files.",
+}
+
+
+def hero(v: RunView) -> dict[str, str]:
+    """The top of the run screen: a tone (live, wait, done, stopped, idle), a short status
+    pill, one headline and one supporting line. Built on `now_line`, so the headline and the
+    lit agent in the graph can never disagree."""
+    table = v.target_table or "the database"
+    if v.status == "succeeded" and v.load:
+        by = (v.approval or {}).get("by") or "you"
+        return {"tone": "done", "pill": f"Approved by {by}",
+                "headline": f"{v.load['rows']:,} rows are in {v.load['table']}",
+                "sub": "Every step was recorded, so this run can be replayed, or rebuilt "
+                       "with no model to prove it is reproducible."}
+    if v.status == "awaiting_approval" and v.approval_request:
+        failed = len(v.approval_request.get("failed_checks") or [])
+        if failed:  # say so in the headline: a person is about to decide on this
+            return {"tone": "wait", "pill": "Waiting for you",
+                    "headline": f"{v.approval_request['rows']:,} rows are staged, but {failed} "
+                                f"quality check{'s' if failed != 1 else ''} failed",
+                    "sub": "Read the failed check before you decide. Nothing is loaded yet, "
+                           "and only your approval opens the gate."}
+        return {"tone": "wait", "pill": "Waiting for you",
+                "headline": f"{v.approval_request['rows']:,} rows are ready. "
+                            f"Nothing is loaded yet.",
+                "sub": "No agent can load data. Only your approval opens the gate."}
+    if v.status == "rejected":
+        by = (v.approval or {}).get("by") or "you"
+        return {"tone": "stopped", "pill": f"Rejected by {by}",
+                "headline": f"Rejected. Nothing was written to {table}.",
+                "sub": "The staged rows were discarded and the database is unchanged."}
+    if v.status == "budget_exceeded":
+        return {"tone": "stopped", "pill": "Stopped at the budget",
+                "headline": "Stopped at the spending limit. Nothing was written.",
+                "sub": "The limit is checked in code before every model call."}
+    if v.status == "failed":
+        return {"tone": "stopped", "pill": "Stopped",
+                "headline": "Stopped without loading anything",
+                "sub": (v.error or "See the activity log for the reason.")[:220]}
+    if v.status == "not started":
+        return {"tone": "idle", "pill": "Not started", "headline": "Not started", "sub": ""}
+
+    agent, text = now_line(v)
+    # Keep the headline to one line: the try count and the sandbox move to the line below.
+    headline = text.split(" (attempt")[0].replace(" in the sandbox", "")
+    limit = v.budget_limits.get("max_retries_per_stage", 3)
+    s = v.stages.get(v.current_stage) if v.current_stage else None
+    sub = _LIMITS.get(agent, "")
+    if agent == "tester":
+        sub = ("Tests are written before any code exists, by a different agent than the code."
+               if "writing" in text else "The code runs in a sealed sandbox with no network.")
+    if s is not None and s.status in ("debugging", "testing") and s.tests:
+        sub = f"Try {max(s.attempt, 1)} of {limit}. {sub}"
+    return {"tone": "live", "pill": "Working now", "headline": headline, "sub": sub}
+
+
+def journey_step(v: RunView) -> int:
+    """Where the visitor is on the three-step journey: 1 Describe, 2 Build, 3 Approve."""
+    if v.status == "not started":
+        return 1
+    if v.status in ("awaiting_approval", "succeeded", "rejected"):
+        return 3
+    return 2
+
+
+def proofs(v: RunView) -> dict[str, int]:
+    """The evidence shown beside the approval buttons: tests and quality checks that passed
+    (out of how many) and how many rows were set aside. Counted from each stage's latest
+    test run and the latest quality round, which are the ones the staged data went through."""
+    tests_total = tests_passed = 0
+    for s in v.stages.values():
+        latest = s.test_runs[-1].get("tests", []) if s.test_runs else []
+        tests_total += len(latest)
+        tests_passed += sum(1 for t in latest if t.get("passed"))
+    rnd = v.quality[-1] if v.quality else {"total": 0, "failed": 0}
+    set_aside = (v.approval_request or {}).get("quarantine_rows")
+    if set_aside is None:
+        set_aside = sum(s.rows_quarantined or 0 for s in v.stages.values())
+    return {"tests_total": tests_total, "tests_passed": tests_passed,
+            "checks_total": rnd["total"], "checks_passed": rnd["total"] - rnd["failed"],
+            "set_aside": set_aside}

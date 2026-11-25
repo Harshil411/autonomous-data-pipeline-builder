@@ -5,22 +5,25 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from app.components import brand_header
+from app.components import page_title
 
+# Colours match the Night theme: light text on dark nodes, maroon for the person,
+# a brighter outline for the Orchestrator.
 ARCH = """
 digraph G {
   rankdir=LR; bgcolor="transparent"; nodesep=0.35; ranksep=0.55;
-  node [shape=box, style="rounded,filled", fillcolor="#FFFFFF", color="#C9CDD5",
-        fontname="Helvetica", fontsize=12, margin="0.18,0.08"];
-  edge [color="#8A90A0", fontname="Helvetica", fontsize=10];
-  you [label="You\\n(request, approval)", fillcolor="#FBF2F5", color="#861F41"];
-  orch [label="Orchestrator\\nplain code, no LLM\\norder, retries, budget", color="#1D2027",
+  node [shape=box, style="rounded,filled", fillcolor="#131316", color="#4A4A54",
+        fontcolor="#EDEDEF", fontname="Helvetica", fontsize=12, margin="0.18,0.08"];
+  edge [color="#6E6E78", fontcolor="#9A9AA3", fontname="Helvetica", fontsize=10];
+  you [label="You\\n(request, approval)", fillcolor="#5E1530", color="#E0668F"];
+  orch [label="Orchestrator\\nplain code, no LLM\\norder, retries, budget", color="#EDEDEF",
         penwidth=2];
-  subgraph cluster_agents { label="LLM agents (Claude)"; color="#DADDE3"; fontname="Helvetica";
+  subgraph cluster_agents { label="LLM agents (Claude)"; color="#34343B"; fontcolor="#9A9AA3";
+    fontname="Helvetica";
     planner [label="Planner"]; coder [label="Stage Coder"]; tester [label="Tester"];
     debugger [label="Debugger"]; validator [label="Validator"]; }
-  subgraph cluster_mcp { label="MCP servers (the only way to reach a tool)"; color="#DADDE3";
-    fontname="Helvetica";
+  subgraph cluster_mcp { label="MCP servers (the only way to reach a tool)"; color="#34343B";
+    fontcolor="#9A9AA3"; fontname="Helvetica";
     sandbox [label="sandbox\\nDocker, no network"]; memory [label="memory\\nChromaDB"];
     artifacts [label="artifacts\\nversioned files"]; git [label="git\\nmcp-server-git"];
     warehouse [label="warehouse\\nSQLite, staging + gate"]; }
@@ -64,7 +67,9 @@ PROMISES = [
 
 
 def main() -> None:
-    brand_header("A bounded multi-agent system: agents for judgment, plain code for control.")
+    page_title("Agents for judgment, plain code for control",
+               "A bounded multi-agent system: five Claude agents do the thinking, and an "
+               "orchestrator with no AI in it decides what happens next.")
     st.markdown("## Why more than one agent")
     st.markdown(
         "Each job needs different information and different permissions. The planner needs "
@@ -72,10 +77,10 @@ def main() -> None:
         "by a different agent than the code, before the code exists, so the code cannot grade "
         "itself. Pass or fail is always decided by running code in a sandbox, never by a "
         "model agreeing with another model.")
-    st.graphviz_chart(ARCH, use_container_width=True)
+    st.graphviz_chart(ARCH, width="stretch")
     st.markdown("## What each agent sees, uses and cannot do")
     st.dataframe(pd.DataFrame(AGENTS, columns=["agent", "sees", "tools", "returns", "cannot"]),
-                 hide_index=True, use_container_width=True)
+                 hide_index=True, width="stretch")
     st.markdown("## The main loop")
     st.markdown(
         "1. Load every source as text and profile it (types, nulls, 5 sample rows).\n"
@@ -91,7 +96,7 @@ def main() -> None:
         "scratch with no model and produce the same fingerprint.")
     st.markdown("## Five things it won't do, and the test that proves each")
     st.dataframe(pd.DataFrame(PROMISES, columns=["it won't", "because", "test"]),
-                 hide_index=True, use_container_width=True)
+                 hide_index=True, width="stretch")
 
 
 main()

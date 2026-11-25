@@ -121,7 +121,7 @@ src/adpb/
   observability/        event log, budget, pricing, redaction, run report
   tools/                gateway, role allow-lists, source loader, profiler, fingerprint
   runtime.py cli.py config.py benchmark.py workspace.py approval.py
-app/                    Streamlit UI (view model, schematic, pages in app/views)
+app/                    Streamlit UI (view model, live graph, theme, pages in app/views)
 benchmarks/             8 request files, fixture generator, results
 tests/                  unit / integration / e2e / ui
 ```
@@ -144,7 +144,7 @@ uv run pytest -m live              # calls the real model (costs money)
 | unit | contracts and plan validation, budgets, redaction, pricing, every quality rule, schema conformance and quarantine, harness, profiler, shell allow-list, model clients against a fake SDK, the agent loop |
 | integration | each MCP server through a real MCP client (official Git server over stdio); the gateway's least-privilege rules; **real Docker isolation** (no network, host invisible, read-only root, non-root, timeout kill, memory cap); 11 whole-pipeline scenarios on the LangGraph graph; reproducible re-run; CLI; benchmark scoring |
 | e2e | one named test per flyer promise; a full run over stdio MCP servers and the Docker sandbox |
-| ui | the view model and schematic; Streamlit pages via `AppTest`, including a real approval click that loads the warehouse |
+| ui | the view model, the live graph and the headline; Streamlit pages via `AppTest`, including a real approval click that loads the warehouse |
 
 ## Requirements traceability
 
