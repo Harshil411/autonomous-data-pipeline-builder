@@ -1,0 +1,19 @@
+# The example for instructors: a class roster and a gradebook export (made-up students).
+request: >-
+  Clean the class roster and the gradebook export and give me one row per enrolled student
+  with their overall course percentage. Student ids sometimes carry stray spaces; section
+  letters and enrolment status come in mixed case. Scores arrive as text like "42", "42.5"
+  or "42 pts"; entries such as "absent" or "EX" are not scores and must be set aside, and so
+  must negative scores. Remove duplicate roster rows and duplicate score lines. Leave out
+  students who have withdrawn and scores for students who are not on the roster. A
+  student's percentage is their total points divided by the total points possible on the
+  work they submitted, times 100, rounded to one decimal.
+expected_result: one row per enrolled student with student_id, full_name, section, assignments_submitted and average_percent
+target_table: course_grades
+quality_rules:
+  - average_percent is between 0 and 100
+  - every student_id appears once
+budget: {max_usd: 0.60}
+sources:
+  - {name: roster, kind: csv, path: ../fixtures/grades/roster.csv, description: class roster export with made-up students}
+  - {name: scores, kind: csv, path: ../fixtures/grades/scores.csv, description: gradebook export with one line per student per assignment}

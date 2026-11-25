@@ -164,8 +164,67 @@ def corrupt() -> None:
     (out / "payments.csv").write_text("\n".join(lines) + "\n")
 
 
+def grades() -> None:
+    """A class roster and a gradebook export: the example for instructors in the audience.
+
+    The students are made up (names from the lists above, addresses on example.edu). The
+    dirt is the kind a real learning-management export has: stray spaces in ids, mixed
+    case, withdrawn students, a repeated roster row, scores with a unit ("42 pts"), entries
+    that are not scores ("absent", "EX"), a negative score, repeated lines, scores for
+    students who are not on the roster, and one malformed line.
+
+    It uses its own random generator so adding it does not change the other datasets."""
+    r = random.Random(5984)  # noqa: S311 - reproducible test data, not crypto
+    out = ROOT / "grades"
+    out.mkdir(parents=True, exist_ok=True)
+
+    majors = ["Computer Science", "computer science", "Data Science", "Statistics ", "STAT",
+              "CMDA"]
+    rows = [["student_id", "full_name", "email", "major", "section", "status"]]
+    for i, sid in enumerate(range(9001, 9061), start=1):
+        name = f"{r.choice(FIRST)} {r.choice(LAST)}"
+        email = f"{name.split()[0].lower()}{sid}@example.edu"
+        status = r.choice(["enrolled", "enrolled", "Enrolled", "ENROLLED "])
+        if sid in (9007, 9023, 9041):
+            status = {9007: "Withdrawn", 9023: "withdrawn", 9041: "WITHDRAWN"}[sid]
+        rows.append([f" {sid}" if i % 17 == 0 else str(sid), name,
+                     email.upper() if i % 9 == 0 else email, r.choice(majors),
+                     r.choice(["A", "a", "B", "b "]), status])
+    rows.append(["N/A", "No Id", "noid@example.edu", "CMDA", "A", "enrolled"])
+    rows.append(rows[5])  # an exact duplicate roster row
+    with (out / "roster.csv").open("w", newline="") as f:
+        csv.writer(f).writerows(rows)
+
+    work = [("HW1", 50), ("HW2", 50), ("Quiz1", 20), ("HW3", 50), ("Midterm", 100),
+            ("HW4", 50), ("Quiz2", 20), ("Project", 100)]
+    lines = ["student_id,assignment,submitted_on,score,max_points"]
+    k = 0
+    for sid in range(9001, 9064):  # 9061-9063 are not on the roster
+        for week, (assignment, max_points) in enumerate(work, start=1):
+            if r.random() < 0.06:
+                continue  # not submitted
+            k += 1
+            points = round(max_points * r.uniform(0.45, 1.0) * 2) / 2  # whole or half points
+            score = r.choice([f"{points:g}", f"{points:.1f}", f" {points:g} ", f"{points:g} pts"])
+            if k % 61 == 0:
+                score = "absent"
+            elif k % 89 == 0:
+                score = "EX"
+            elif k % 127 == 0:
+                score = "-5"
+            m, d = 8 + (week + 1) // 4, 1 + (week * 7 + sid) % 28
+            when = r.choice([f"2026-{m:02d}-{d:02d}", f"{m:02d}/{d:02d}/2026",
+                             f"{MONTHS[m - 1]} {d} 2026"])
+            student = f"{sid} " if k % 43 == 0 else str(sid)
+            lines.append(f"{student},{assignment},{when},{score},{max_points}")
+            if k % 71 == 0:
+                lines.append(lines[-1])  # the same score line twice
+    lines.insert(100, "9010,HW2,2026-09-14,41,50,late,regraded")  # malformed line
+    (out / "scores.csv").write_text("\n".join(lines) + "\n")
+
+
 if __name__ == "__main__":
-    for make in (shop, sensors, crm, drift, injection, api, corrupt):
+    for make in (shop, sensors, crm, drift, injection, api, corrupt, grades):
         make()
     for p in sorted(ROOT.rglob("*.*")):
         print(f"{p.relative_to(ROOT)}  {p.stat().st_size:,} bytes")

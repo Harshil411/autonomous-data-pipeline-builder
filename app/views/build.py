@@ -19,12 +19,16 @@ from app.state import manager
 from app.viewmodel import build_view
 
 REQUESTS = REPO_ROOT / "benchmarks" / "requests"
+# Short titles: six buttons share one row under the request box. The blurb is the tooltip.
 PRESETS = {
-    "shop_join": ("Web-shop orders", "Clean two CSV exports and join every order to its "
+    "shop_join": ("Shop orders", "Clean two CSV exports and join every order to its "
                                      "customer"),
-    "shop_monthly_revenue": ("Monthly revenue", "Paid revenue per region per month"),
-    "sensors_daily": ("Sensor readings", "Nested JSON to daily temperatures per site"),
+    "shop_monthly_revenue": ("Revenue", "Paid revenue per region per month"),
+    "sensors_daily": ("Sensors", "Nested JSON to daily temperatures per site"),
     "crm_contacts": ("CRM contacts", "A CSV plus a SQLite table, deduplicated by email"),
+    # for the instructors in the audience: a roster and a gradebook, with made-up students
+    "course_grades": ("Course grades", "A class roster and a gradebook export, to one "
+                                       "percentage per enrolled student"),
 }
 CUSTOM = "custom"
 KINDS = {".csv": SourceKind.CSV, ".json": SourceKind.JSON, ".jsonl": SourceKind.JSON,

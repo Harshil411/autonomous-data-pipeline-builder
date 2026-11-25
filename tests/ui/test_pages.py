@@ -42,7 +42,9 @@ def test_new_run_form_prefills_the_showcase_example(home):
     assert not at.exception
     assert "customers" in at.text_area[0].value.lower()
     assert any(b.label == "Build the pipeline" for b in at.button)
-    assert len([b for b in at.button if b.key and b.key.startswith("preset-")]) == 5
+    presets = [b for b in at.button if b.key and b.key.startswith("preset-")]
+    assert len(presets) == 6
+    assert "Course grades" in [b.label for b in presets]  # the example for instructors
     # the Describe screen leads with one sentence and the journey's three steps
     page = " ".join(m.value for m in at.markdown)
     assert "Describe the data you need" in page

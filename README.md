@@ -82,7 +82,9 @@ folder with its VM, so the sandbox could not see files elsewhere.
 | `adpb replay RUN_ID` | print the recorded event stream |
 | `adpb bench [--repeat N]` | run the 8-request benchmark suite (calls the model; costs money) |
 
-A request file looks like `benchmarks/requests/shop_join.yaml`.
+A request file looks like `benchmarks/requests/shop_join.yaml`. The app offers five ready-made examples;
+one of them, `course_grades.yaml`, is a class roster and a gradebook export with made-up
+students, for instructors who want to see their own kind of data.
 
 ## Architecture
 

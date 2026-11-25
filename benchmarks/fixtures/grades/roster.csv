@@ -1,0 +1,63 @@
+student_id,full_name,email,major,section,status
+9001,Barbara Perlman,barbara9001@example.edu,Computer Science,b ,Enrolled
+9002,Katherine Lovelace,katherine9002@example.edu,CMDA,B,enrolled
+9003,Sophie Dijkstra,sophie9003@example.edu,Data Science,a,Enrolled
+9004,Edsger Hopper,edsger9004@example.edu,computer science,A,Enrolled
+9005,Anita Hamilton,anita9005@example.edu,CMDA,B,ENROLLED 
+9006,Donald Knuth,donald9006@example.edu,Computer Science,A,Enrolled
+9007,Margaret Liskov,margaret9007@example.edu,Computer Science,A,Withdrawn
+9008,Dennis Turing,dennis9008@example.edu,computer science,a,ENROLLED 
+9009,Linus Liskov,LINUS9009@EXAMPLE.EDU,CMDA,b ,ENROLLED 
+9010,Radia Hamilton,radia9010@example.edu,Computer Science,B,ENROLLED 
+9011,Hedy Lovelace,hedy9011@example.edu,computer science,a,enrolled
+9012,Ken Lovelace,ken9012@example.edu,Computer Science,a,enrolled
+9013,Edsger Ritchie,edsger9013@example.edu,Data Science,a,Enrolled
+9014,Anita Ritchie,anita9014@example.edu,Computer Science,b ,Enrolled
+9015,Hedy Lamarr,hedy9015@example.edu,STAT,b ,enrolled
+9016,Katherine Ritchie,katherine9016@example.edu,STAT,A,enrolled
+ 9017,Margaret Perlman,margaret9017@example.edu,Computer Science,a,enrolled
+9018,Margaret Perlman,MARGARET9018@EXAMPLE.EDU,Computer Science,a,enrolled
+9019,Linus Perlman,linus9019@example.edu,Computer Science,B,enrolled
+9020,Alan Thompson,alan9020@example.edu,Computer Science,A,enrolled
+9021,Linus Thompson,linus9021@example.edu,CMDA,A,enrolled
+9022,Guido Thompson,guido9022@example.edu,Statistics ,A,enrolled
+9023,Alan Lovelace,alan9023@example.edu,Statistics ,b ,withdrawn
+9024,Guido Lovelace,guido9024@example.edu,CMDA,A,Enrolled
+9025,Linus Allen,linus9025@example.edu,computer science,b ,enrolled
+9026,Guido Ritchie,guido9026@example.edu,computer science,B,enrolled
+9027,Grace Torvalds,GRACE9027@EXAMPLE.EDU,STAT,A,enrolled
+9028,Frances Lamarr,frances9028@example.edu,computer science,a,enrolled
+9029,Grace Allen,grace9029@example.edu,Data Science,a,Enrolled
+9030,Sophie Perlman,sophie9030@example.edu,CMDA,a,ENROLLED 
+9031,Tim Ritchie,tim9031@example.edu,Computer Science,b ,enrolled
+9032,Ken Lamarr,ken9032@example.edu,STAT,b ,enrolled
+9033,Katherine Thompson,katherine9033@example.edu,STAT,a,ENROLLED 
+ 9034,Margaret Lamarr,margaret9034@example.edu,Data Science,A,enrolled
+9035,Donald Ritchie,donald9035@example.edu,Data Science,A,Enrolled
+9036,Margaret Johnson,MARGARET9036@EXAMPLE.EDU,Computer Science,A,Enrolled
+9037,Frances Berners-Lee,frances9037@example.edu,computer science,b ,enrolled
+9038,Radia Allen,radia9038@example.edu,Data Science,B,Enrolled
+9039,Margaret Allen,margaret9039@example.edu,CMDA,A,enrolled
+9040,Dennis Allen,dennis9040@example.edu,CMDA,b ,enrolled
+9041,Frances Hopper,frances9041@example.edu,Data Science,a,WITHDRAWN
+9042,Tim Turing,tim9042@example.edu,computer science,B,enrolled
+9043,Katherine Knuth,katherine9043@example.edu,CMDA,A,Enrolled
+9044,Frances Perlman,frances9044@example.edu,Data Science,A,ENROLLED 
+9045,Guido Turing,GUIDO9045@EXAMPLE.EDU,Computer Science,B,ENROLLED 
+9046,Radia Liskov,radia9046@example.edu,Computer Science,a,ENROLLED 
+9047,Radia Thompson,radia9047@example.edu,Computer Science,a,enrolled
+9048,Grace Liskov,grace9048@example.edu,Data Science,B,Enrolled
+9049,Edsger Johnson,edsger9049@example.edu,Statistics ,b ,enrolled
+9050,Anita Hamilton,anita9050@example.edu,Statistics ,a,ENROLLED 
+ 9051,Frances Liskov,frances9051@example.edu,Statistics ,b ,ENROLLED 
+9052,Katherine Torvalds,katherine9052@example.edu,STAT,b ,enrolled
+9053,Guido Lovelace,guido9053@example.edu,computer science,b ,ENROLLED 
+9054,Frances Hopper,FRANCES9054@EXAMPLE.EDU,computer science,a,ENROLLED 
+9055,Margaret Perlman,margaret9055@example.edu,Computer Science,b ,enrolled
+9056,Edsger Allen,edsger9056@example.edu,STAT,a,enrolled
+9057,Tim Ritchie,tim9057@example.edu,computer science,A,enrolled
+9058,Sophie Hopper,sophie9058@example.edu,CMDA,B,enrolled
+9059,Hedy Lovelace,hedy9059@example.edu,CMDA,B,enrolled
+9060,Donald Thompson,donald9060@example.edu,Data Science,b ,enrolled
+N/A,No Id,noid@example.edu,CMDA,A,enrolled
+9005,Anita Hamilton,anita9005@example.edu,CMDA,B,ENROLLED 
