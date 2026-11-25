@@ -388,6 +388,7 @@ class ExecutionResult(_Frozen):
     duration_s: float = 0.0
     output_path: str | None = None
     quarantine_path: str | None = None
+    logs: str = ""  # anything the stage code printed (truncated)
 
     @property
     def failed_tests(self) -> list[TestOutcome]:

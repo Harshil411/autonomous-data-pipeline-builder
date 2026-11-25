@@ -24,6 +24,7 @@ dependencies = [
     "python-dotenv",
     "streamlit",
     "httpx",
+    "duckdb>=2.0.1",
 ]
 
 [project.optional-dependencies]
