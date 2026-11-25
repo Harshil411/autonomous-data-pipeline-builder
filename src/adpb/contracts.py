@@ -368,6 +368,7 @@ class StageCode(_Frozen):
 
 
 class TestOutcome(_Frozen):
+    __test__ = False  # not a pytest test class
     name: str
     passed: bool
     detail: str = ""
@@ -411,6 +412,33 @@ class RunStatus(StrEnum):
     REJECTED = "rejected"
     FAILED = "failed"
     BUDGET_EXCEEDED = "budget_exceeded"
+
+
+# --------------------------------------------------------------------------------------
+# Raw agent outputs (what each LLM returns before the orchestrator assembles contracts)
+# --------------------------------------------------------------------------------------
+
+
+class PlanDraft(_Frozen):
+    """The Planner's answer. The orchestrator adds the request and sources it already
+    knows, so the model cannot alter them, then validates the result as a PipelinePlan."""
+
+    stages: list[StageSpec] = Field(min_length=1)
+    final_dataset: str
+    quality_rules: list[QualityRule] = Field(default_factory=list)
+    rationale: str = ""
+
+
+class DebugPatch(_Frozen):
+    """The Debugger's answer: a diagnosis and a full replacement for the stage code."""
+
+    diagnosis: str = Field(min_length=5, max_length=2000)
+    code: str = Field(min_length=10, max_length=20_000)
+
+
+class RuleProposals(_Frozen):
+    rules: list[QualityRule] = Field(default_factory=list)
+    notes: str = ""
 
 
 # Pydantic needs the forward reference to QualityRule resolved for PipelinePlan.
