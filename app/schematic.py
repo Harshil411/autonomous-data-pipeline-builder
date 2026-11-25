@@ -12,12 +12,13 @@ from html import escape
 
 from app.viewmodel import ACTIVE, RunView
 
-W, H, GX, GY, PAD = 232, 76, 56, 18, 10
+W, H, GX, GY, PAD = 236, 92, 56, 16, 10
 
 STYLE = """
 <style>
   .sch text { font-family: inherit; }
   .sch .title { font-size: 18px; font-weight: 700; fill: #1D2027; }
+  .sch .note { font-size: 14px; fill: #6B7180; }
   .sch .sub { font-size: 15px; fill: #4A505C; }
   .sch .edge { fill: none; stroke: #B9BEC8; stroke-width: 2; }
   .sch .edge.done { stroke: #1F7A4D; }
@@ -54,8 +55,7 @@ def _depths(v: RunView) -> dict[str, int]:
 
 def _stage_text(status: str, s) -> str:
     if status == "passed":
-        q = f", {s.rows_quarantined:,} set aside" if s.rows_quarantined else ""
-        return f"passed: {s.rows_out:,} rows{q}" if s.rows_out is not None else "passed"
+        return f"passed: {s.rows_out:,} rows" if s.rows_out is not None else "passed"
     if status == "failed":
         return f"failed after {s.attempt} attempt(s)"
     if status in ACTIVE:
@@ -108,7 +108,7 @@ def render_schematic(v: RunView) -> str:
     for s in final:
         edge(s.id, "__warehouse__", s.status == "passed")
 
-    def node(name: str, cls: str, title: str, sub: str) -> None:
+    def node(name: str, cls: str, title: str, sub: str, note: str = "") -> None:
         x, y = pos[name]
         parts.append(f'<g class="node {cls}" transform="translate({x},{y})">')
         if cls == "running":
@@ -117,14 +117,18 @@ def render_schematic(v: RunView) -> str:
         parts.append(f'<rect class="box" width="{W}" height="{H}" rx="8"/>')
         parts.append(f'<rect class="bar" width="6" height="{H}" rx="3"/>')
         parts.append(f'<text class="title" x="18" y="31">{escape(title[:22])}</text>')
-        parts.append(f'<text class="sub" x="18" y="57">{escape(sub[:28])}</text></g>')
+        parts.append(f'<text class="sub" x="18" y="56">{escape(sub[:28])}</text>')
+        if note:
+            parts.append(f'<text class="note" x="18" y="77">{escape(note[:30])}</text>')
+        parts.append("</g>")
 
     for name, info in v.sources.items():
         node(name, "source", name, f"source: {info['rows']:,} rows")
     for s in v.stages.values():
         cls = "running" if s.status in ACTIVE else s.status if s.status in ("passed",
                                                                             "failed") else "pending"
-        node(s.id, cls, s.id, _stage_text(s.status, s))
+        aside = f"{s.rows_quarantined:,} rows set aside" if s.rows_quarantined else ""
+        node(s.id, cls, s.id, _stage_text(s.status, s), aside)
     table = "Final table"  # the stage feeding it often has the same name
     if v.load:
         node("__warehouse__", "loaded", table, f"loaded: {v.load['rows']:,} rows")

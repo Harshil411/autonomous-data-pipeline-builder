@@ -70,10 +70,15 @@ class RunView:
     started_ts: float | None = None
     last_ts: float | None = None
     replans: int = 0
+    waited: float = 0.0              # seconds spent waiting for a person to decide
+    _gate_opened: float | None = None
 
     @property
     def elapsed(self) -> float:
-        return (self.last_ts - self.started_ts) if self.started_ts and self.last_ts else 0.0
+        """Working time: wall-clock time minus the time spent waiting at the approval gate."""
+        if self.started_ts is None or self.last_ts is None:
+            return 0.0
+        return self.last_ts - self.started_ts - self.waited
 
 
 def _n(x: int | None) -> str:
@@ -97,7 +102,8 @@ def build_view(events: list[dict]) -> RunView:
     for e in events:
         k, seq, ts = e["kind"], e["seq"], e["ts"]
         v.run_id = e.get("run_id", v.run_id)
-        v.started_ts = v.started_ts or ts
+        if v.started_ts is None:
+            v.started_ts = ts
         v.last_ts = ts
         def add(agent, text, tone="neutral", stage=None, detail="", _seq=seq, _ts=ts):
             v.activity.append(Activity(_seq, _ts, agent, text, stage, tone, detail))
@@ -197,10 +203,14 @@ def build_view(events: list[dict]) -> RunView:
                 e["stage"], detail=e.get("feedback", ""))
         elif k == "approval_requested":
             v.status, v.approval_request = "awaiting_approval", e
+            v._gate_opened = ts
             add("you", f"Waiting for your approval to load {_n(e['rows'])} rows into "
                        f"{e['table']}", "wait")
         elif k == "approval_decision":
             v.approval = e
+            if v._gate_opened is not None:
+                v.waited += ts - v._gate_opened
+                v._gate_opened = None
             verb = "Approved" if e["approved"] else "Rejected"
             add("you", f"{verb} by {e['by']}", "good" if e["approved"] else "bad",
                 detail=e.get("note", ""))
@@ -228,3 +238,59 @@ def summary_numbers(v: RunView) -> dict[str, Any]:
     return {"stages": f"{passed}/{len(v.stages)}", "retries": retries,
             "cost": f"${v.cost['usd']:.3f}", "tokens": f"{v.cost['tokens']:,}",
             "calls": v.cost["calls"], "elapsed": f"{v.elapsed:.0f}s"}
+
+
+# -- what a visitor reads from across the table ---------------------------------------------
+
+LANE = ("planner", "tester", "coder", "debugger", "validator")
+
+
+def now_line(v: RunView) -> tuple[str, str]:
+    """(agent, one plain sentence) describing what is happening right now."""
+    table = v.target_table or "the database"
+    if v.status == "not started":
+        return "orchestrator", "Not started"
+    if v.status == "succeeded" and v.load:
+        return "orchestrator", f"Done: {v.load['rows']:,} rows loaded into {v.load['table']}"
+    if v.status == "rejected":
+        return "you", f"Rejected: nothing was written to {table}"
+    if v.status == "budget_exceeded":
+        return "orchestrator", "Stopped at the budget limit; nothing was written"
+    if v.status == "failed":
+        return "orchestrator", f"Stopped: {(v.error or 'see the activity log')[:140]}"
+    if v.status == "awaiting_approval" and v.approval_request:
+        req = v.approval_request
+        return "you", f"Waiting for you to approve loading {req['rows']:,} rows into {req['table']}"
+
+    limit = v.budget_limits.get("max_retries_per_stage", 3)
+    if v.current_stage and v.current_stage in v.stages:
+        s = v.stages[v.current_stage]
+        if s.status == "coding":
+            return "coder", f"The Stage Coder is writing {s.id}"
+        if s.status == "debugging":
+            return "debugger", f"The Debugger is fixing {s.id} (attempt {s.attempt} of {limit})"
+        if s.status == "testing" and not s.tests:
+            return "tester", f"The Tester is writing tests for {s.id}"
+        if s.status == "testing":
+            return "tester", (f"The Tester is running {s.id} in the sandbox "
+                              f"(attempt {max(s.attempt, 1)} of {limit})")
+    if not v.stages:
+        if not v.sources:
+            return "orchestrator", "Reading and profiling the sources"
+        return "planner", "The Planner is designing the pipeline"
+    if any(s.status == "failed" for s in v.stages.values()):
+        return "planner", "The Planner is revising the plan"
+    pending = [s for s in v.stages.values() if s.status != "passed"]
+    if pending:
+        return "tester", f"The Tester is writing tests for {pending[0].id}"
+    if not v.quality:
+        return "validator", "The Validator is checking data quality"
+    return "orchestrator", "Staging the result for your approval"
+
+
+def agent_states(v: RunView) -> dict[str, str]:
+    """working / done / idle for each of the five agents, in pipeline order."""
+    active, _ = now_line(v)
+    live = v.status == "running"
+    return {a: "working" if live and a == active else
+            "done" if a in v.cost["by_agent"] else "idle" for a in LANE}

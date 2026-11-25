@@ -41,14 +41,15 @@ def test_new_run_form_prefills_the_showcase_example(home):
     at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30).run()
     assert not at.exception
     assert "customers" in at.text_area[0].value.lower()
-    assert at.button[0].label == "Build the pipeline"
+    assert any(b.label == "Build the pipeline" for b in at.button)
+    assert len([b for b in at.button if b.key and b.key.startswith("preset-")]) == 5
 
 
 def test_form_refuses_a_request_without_sources(home):
     at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30).run()
-    at.toggle[0].set_value(False).run()
+    next(b for b in at.button if b.key == "preset-custom").click().run()
     at.text_area[0].set_value("Load my files and clean them please.")
-    at.button[0].click().run()
+    next(b for b in at.button if b.label == "Build the pipeline").click().run()
     assert any("at least one source" in e.value for e in at.error)
 
 
@@ -72,8 +73,10 @@ def test_approval_gate_loads_the_data_when_approved(home, paused_run):
 def test_runs_page_lists_the_run_and_renders_it(home, paused_run):
     at = AppTest.from_file(str(PAGES / "runs.py"), default_timeout=30).run()
     assert not at.exception
-    assert at.selectbox[0].value == paused_run.ws.run_id
-    assert any(b.label == "Replay from the start" for b in at.button)
+    assert any(b.key == f"pick-{paused_run.ws.run_id}" for b in at.button)
+    assert any(b.label == "Replay this run" for b in at.button)
+    # a paused run can be decided right here
+    assert any(b.label.startswith("Load 4 rows") for b in at.button)
 
 
 @pytest.mark.parametrize("page", ["benchmarks.py", "how_it_works.py"])
