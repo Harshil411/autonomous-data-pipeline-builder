@@ -85,6 +85,21 @@ def test_tester_assertions_are_evaluated(tmp_path):
     assert not res["ok"]  # any failing test fails the stage
 
 
+def test_checks_may_use_generator_expressions_and_comprehensions(tmp_path):
+    # Found in a live run: with the scope passed as eval's *locals*, names like `out`
+    # are invisible inside generator expressions, so correct tests raised NameError.
+    tests = [
+        {"name": "gen", "description": "",  # `out` used inside the generator body
+         "check": "all(out['amount'].iloc[i] > 0 for i in range(len(out)) "
+                  "if out['amount'].notna().iloc[i])"},
+        {"name": "comp", "description": "", "check": "len([i for i in out['order_id']]) == 3"},
+        {"name": "uses_inputs", "description": "",
+         "check": "any(len(df) > 0 for df in inputs.values())"},
+    ]
+    res = _job(tmp_path, GOOD_CODE, tests=tests)
+    assert [t["passed"] for t in res["tests"]] == [True, True, True], res["tests"]
+
+
 def test_sql_stages_run_on_duckdb_with_dots_mapped_to_underscores(tmp_path):
     sql = "SELECT order_id, replace(amount, '$', '') AS amount FROM raw_orders"
     res = _job(tmp_path, sql, language="sql")

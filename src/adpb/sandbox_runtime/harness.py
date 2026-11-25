@@ -79,7 +79,10 @@ def _evaluate_tests(tests, out, inputs, quarantine) -> list[dict]:
     scope = {"out": out, "inputs": inputs, "quarantine": quarantine, "pd": pd, "np": np}
     for t in tests:
         try:
-            value = eval(t["check"], {"__builtins__": __builtins__}, dict(scope))  # noqa: S307
+            # The names go in *globals*: a generator expression's body cannot see eval's
+            # separate locals, so `all(out[c].iloc[i] > 0 for i in ...)` would raise
+            # NameError even though the test is correct (found in a live run).
+            value = eval(t["check"], {"__builtins__": __builtins__, **scope})  # noqa: S307
             if isinstance(value, pd.Series | pd.DataFrame | np.ndarray):
                 raise TypeError("check returned an array; wrap it in .all() or .any()")
             passed = bool(value)
