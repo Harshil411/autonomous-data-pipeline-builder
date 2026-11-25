@@ -1,0 +1,11 @@
+request: >-
+  Using the customers and orders exports, compute total paid revenue per customer region per
+  calendar month of 2026. Regions are written inconsistently (" East", "EAST") and must be
+  normalised to lower case. Only count orders whose status is paid. Amounts are text with
+  currency symbols and thousands separators.
+expected_result: one row per region and month with revenue and order count
+target_table: monthly_revenue
+budget: {max_usd: 0.60}
+sources:
+  - {name: customers, kind: csv, path: ../fixtures/shop/customers.csv}
+  - {name: orders, kind: csv, path: ../fixtures/shop/orders.csv}

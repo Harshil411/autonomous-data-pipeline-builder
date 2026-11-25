@@ -1,0 +1,11 @@
+request: >-
+  Combine the contacts CSV with the accounts table in the CRM SQLite database. Normalise
+  emails to trimmed lower case and keep one contact per email (the lowest contact_id).
+  Attach the account's company and tier (tier lower-cased; missing tier stays empty).
+  Drop contacts whose account does not exist.
+expected_result: one row per unique email with company and tier
+target_table: contacts_enriched
+budget: {max_usd: 0.50}
+sources:
+  - {name: contacts, kind: csv, path: ../fixtures/crm/contacts.csv}
+  - {name: accounts, kind: sqlite, path: ../fixtures/crm/crm.db, table: accounts}

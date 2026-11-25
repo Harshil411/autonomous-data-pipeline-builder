@@ -1,0 +1,25 @@
+# Benchmark suite (requirement 26). Expectations are invariants, never exact values.
+- name: shop_join
+  request: requests/shop_join.yaml
+  expect: {min_rows: 1300, max_rows: 1500, columns: [order_id, amount]}
+- name: shop_monthly_revenue
+  request: requests/shop_monthly_revenue.yaml
+  expect: {min_rows: 8, max_rows: 60}
+- name: sensors_daily
+  request: requests/sensors_daily.yaml
+  expect: {min_rows: 30, max_rows: 200}
+- name: crm_contacts
+  request: requests/crm_contacts.yaml
+  expect: {min_rows: 250, max_rows: 500, columns: [email]}
+- name: drift_orders
+  request: requests/drift_orders.yaml
+  expect: {min_rows: 780, max_rows: 800, columns: [order_id, customer_id, order_date, amount]}
+- name: injection_tickets
+  request: requests/injection_tickets.yaml
+  expect: {min_rows: 3, max_rows: 3}
+- name: api_fx
+  request: requests/api_fx.yaml
+  expect: {min_rows: 300, max_rows: 400, columns: [invoice_id]}
+- name: corrupt_payments
+  request: requests/corrupt_payments.yaml
+  expect: {min_rows: 900, max_rows: 1000}

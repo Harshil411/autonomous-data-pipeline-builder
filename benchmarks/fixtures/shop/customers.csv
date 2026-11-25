@@ -1,0 +1,203 @@
+customer_id,full_name,email,region,signup_date
+1,Margaret Lovelace,margaret.1@example.com,West,01/02/2026
+2,Frances Torvalds,frances.2@example.com,East ,2026-01-03
+3,Hedy Lovelace,hedy.3@example.com,east,2026-01-04
+4,Dennis Hamilton,dennis.4@example.com,SOUTH,2026-01-05
+5,Anita Hamilton,anita.5@example.com,SOUTH,2026-01-06T10:06:00
+6,Frances Allen,frances.6@example.com,West,2026-01-07
+7,Barbara Johnson,barbara.7@example.com,North ,Jan 8 2026
+8,Ken Torvalds,ken.8@example.com,west,Jan 9 2026
+9,Margaret Hopper,margaret.9@example.com,North ,2026-01-10
+10,Katherine Lamarr,katherine.10@example.com,north,Jan 11 2026
+11,Grace Johnson,GRACE.11@EXAMPLE.COM,south,2026-01-12
+12,Donald Hopper,donald.12@example.com,SOUTH,Jan 13 2026
+13,Katherine Perlman,katherine.13@example.com,west,2026-01-14
+14,Grace Dijkstra,grace.14@example.com,west,Jan 15 2026
+15,Linus Lamarr,linus.15@example.com,west,2026-01-16
+16,Donald Turing,donald.16@example.com,south,Jan 17 2026
+17,Barbara Liskov,barbara.17@example.com,north,01/18/2026
+18,Ken Johnson,ken.18@example.com,East ,01/19/2026
+19,Anita Johnson,anita.19@example.com,west,01/20/2026
+20,Tim Ritchie,tim.20@example.com,West,01/21/2026
+21,Edsger Lamarr,edsger.21@example.com,east,01/22/2026
+22,Grace Knuth,GRACE.22@EXAMPLE.COM,north,2026-01-23T10:23:00
+23,Ken Hopper,ken.23@example.com,west,Jan 24 2026
+24,Dennis Dijkstra,dennis.24@example.com,south,2026-01-25T10:25:00
+25,Tim Torvalds,tim.25@example.com,West,01/26/2026
+26,Frances Johnson,frances.26@example.com,SOUTH,Jan 27 2026
+27,Hedy Berners-Lee,hedy.27@example.com,North ,Jan 28 2026
+28,Frances Torvalds,frances.28@example.com,SOUTH,2026-02-01T10:01:00
+29,Linus Knuth,linus.29@example.com,east,2026-02-02
+30,Alan Dijkstra,alan.30@example.com,EAST,2026-02-03T10:03:00
+31,Linus Ritchie,linus.31@example.com,North ,2026-02-04T10:04:00
+32,Guido Turing,guido.32@example.com,SOUTH,2026-02-05
+33,Margaret Dijkstra,MARGARET.33@EXAMPLE.COM,SOUTH,Feb 6 2026
+34,Edsger Hopper,edsger.34@example.com,West,2026-02-07T10:07:00
+35,Barbara Allen,barbara.35@example.com,east,Feb 8 2026
+36,Guido Knuth,guido.36@example.com,EAST,2026-02-09
+ 37,Radia Lamarr,radia.37@example.com,SOUTH,02/10/2026
+38,Alan Liskov,alan.38@example.com,EAST,2026-02-11
+39,Edsger Allen,edsger.39@example.com,east,2026-02-12
+40,Katherine Berners-Lee,katherine.40@example.com,West,02/13/2026
+41,Grace Hamilton,grace.41@example.com,East ,2026-02-14
+42,Sophie Lamarr,sophie.42@example.com,East ,02/15/2026
+43,Alan Dijkstra,alan.43@example.com,south,02/16/2026
+44,Ken Thompson,KEN.44@EXAMPLE.COM,North ,02/17/2026
+45,Anita Knuth,anita.45@example.com,west,Feb 18 2026
+46,Donald Dijkstra,donald.46@example.com,north,2026-02-19T10:19:00
+47,Guido Allen,guido.47@example.com,East ,02/20/2026
+48,Frances Hopper,frances.48@example.com,north,2026-02-21
+49,Anita Hamilton,anita.49@example.com,west,2026-02-22
+50,Linus Johnson,linus.50@example.com,east,02/23/2026
+51,Linus Berners-Lee,linus.51@example.com,east,Feb 24 2026
+52,Linus Thompson,linus.52@example.com,west,Feb 25 2026
+53,,sophie.53@example.com,SOUTH,02/26/2026
+54,Sophie Hamilton,sophie.54@example.com,south,2026-02-27T10:27:00
+55,Dennis Hopper,DENNIS.55@EXAMPLE.COM,East ,2026-02-28T10:28:00
+56,Katherine Ritchie,katherine.56@example.com,North ,2026-03-01T10:01:00
+57,Grace Dijkstra,grace.57@example.com,East ,2026-03-02
+58,Donald Johnson,donald.58@example.com,north,2026-03-03
+59,Frances Hamilton,frances.59@example.com,west,2026-03-04T10:04:00
+60,Alan Ritchie,alan.60@example.com,EAST,Mar 5 2026
+61,Tim Hamilton,tim.61@example.com,East ,2026-03-06T10:06:00
+62,Anita Hopper,anita.62@example.com,east,2026-03-07
+63,Linus Berners-Lee,linus.63@example.com,west,03/08/2026
+64,Hedy Allen,hedy.64@example.com,south,03/09/2026
+65,Donald Berners-Lee,donald.65@example.com,east,03/10/2026
+66,Donald Lovelace,DONALD.66@EXAMPLE.COM,North ,Mar 11 2026
+67,Tim Turing,tim.67@example.com,North ,2026-03-12T10:12:00
+68,Alan Hamilton,alan.68@example.com,West,03/13/2026
+69,Grace Perlman,grace.69@example.com,SOUTH,2026-03-14
+70,Edsger Lovelace,edsger.70@example.com,east,2026-03-15T10:15:00
+71,Guido Berners-Lee,guido.71@example.com,SOUTH,03/16/2026
+72,Grace Thompson,grace.72@example.com,East ,03/17/2026
+73,Linus Perlman,linus.73@example.com,East ,03/18/2026
+ 74,Donald Hopper,donald.74@example.com,west,2026-03-19
+75,Linus Ritchie,linus.75@example.com,SOUTH,Mar 20 2026
+76,Ken Hamilton,ken.76@example.com,north,03/21/2026
+77,Ken Ritchie,KEN.77@EXAMPLE.COM,EAST,Mar 22 2026
+78,Tim Liskov,tim.78@example.com,East ,2026-03-23
+79,Tim Perlman,tim.79@example.com,East ,2026-03-24
+80,Anita Hamilton,anita.80@example.com,SOUTH,Mar 25 2026
+81,Alan Berners-Lee,alan.81@example.com,north,2026-03-26
+82,Frances Liskov,frances.82@example.com,West,03/27/2026
+83,Tim Lamarr,tim.83@example.com,SOUTH,Mar 28 2026
+84,Guido Lovelace,guido.84@example.com,SOUTH,Apr 1 2026
+85,Margaret Berners-Lee,margaret.85@example.com,EAST,Apr 2 2026
+86,Margaret Berners-Lee,margaret.86@example.com,East ,04/03/2026
+87,Ken Turing,ken.87@example.com,west,Apr 4 2026
+88,Dennis Dijkstra,DENNIS.88@EXAMPLE.COM,West,2026-04-05T10:05:00
+89,Ken Berners-Lee,ken.89@example.com,east,2026-04-06
+90,Hedy Lamarr,hedy.90@example.com,West,2026-04-07
+91,Ada Liskov,ada.91@example.com,EAST,Apr 8 2026
+92,Barbara Johnson,barbara.92@example.com,south,2026-04-09T10:09:00
+93,Anita Lovelace,anita.93@example.com,East ,2026-04-10
+94,Alan Thompson,alan.94@example.com,east,Apr 11 2026
+95,Anita Torvalds,anita.95@example.com,North ,04/12/2026
+96,Grace Turing,grace.96@example.com,north,2026-04-13
+97,Katherine Hamilton,katherine.97@example.com,west,2026-04-14
+98,Katherine Knuth,katherine.98@example.com,SOUTH,2026-04-15T10:15:00
+99,Alan Berners-Lee,ALAN.99@EXAMPLE.COM,west,04/16/2026
+100,Barbara Berners-Lee,barbara.100@example.com,North ,2026-04-17
+101,Barbara Johnson,barbara.101@example.com,north,2026-04-18T10:18:00
+102,Frances Turing,frances.102@example.com,EAST,2026-04-19
+103,Donald Lamarr,donald.103@example.com,east,2026-04-20T10:20:00
+104,Frances Hamilton,frances.104@example.com,south,Apr 21 2026
+105,Radia Lamarr,radia.105@example.com,west,04/22/2026
+106,,ada.106@example.com,west,2026-04-23T10:23:00
+107,Edsger Turing,edsger.107@example.com,East ,Apr 24 2026
+108,Katherine Dijkstra,katherine.108@example.com,SOUTH,2026-04-25T10:25:00
+109,Anita Liskov,anita.109@example.com,east,2026-04-26
+110,Ken Torvalds,KEN.110@EXAMPLE.COM,West,2026-04-27
+ 111,Margaret Perlman,margaret.111@example.com,North ,Apr 28 2026
+112,Edsger Ritchie,edsger.112@example.com,SOUTH,2026-05-01
+113,Donald Berners-Lee,donald.113@example.com,west,May 2 2026
+114,Grace Johnson,grace.114@example.com,North ,2026-05-03
+115,Guido Berners-Lee,guido.115@example.com,SOUTH,05/04/2026
+116,Katherine Ritchie,katherine.116@example.com,East ,May 5 2026
+117,Edsger Dijkstra,edsger.117@example.com,East ,May 6 2026
+118,Guido Turing,guido.118@example.com,North ,May 7 2026
+119,Donald Johnson,donald.119@example.com,West,05/08/2026
+120,Dennis Ritchie,dennis.120@example.com,North ,05/09/2026
+121,Radia Ritchie,RADIA.121@EXAMPLE.COM,SOUTH,2026-05-10
+122,Radia Turing,radia.122@example.com,west,2026-05-11T10:11:00
+123,Edsger Allen,edsger.123@example.com,south,2026-05-12T10:12:00
+124,Dennis Thompson,dennis.124@example.com,south,05/13/2026
+125,Linus Turing,linus.125@example.com,SOUTH,May 14 2026
+126,Linus Lamarr,linus.126@example.com,west,May 15 2026
+127,Frances Knuth,frances.127@example.com,west,05/16/2026
+128,Ada Lovelace,ada.128@example.com,west,2026-05-17T10:17:00
+129,Linus Allen,linus.129@example.com,North ,05/18/2026
+130,Donald Allen,donald.130@example.com,North ,05/19/2026
+131,Alan Dijkstra,alan.131@example.com,east,2026-05-20
+132,Hedy Hamilton,HEDY.132@EXAMPLE.COM,EAST,2026-05-21T10:21:00
+133,Grace Thompson,grace.133@example.com,west,2026-05-22
+134,Tim Torvalds,tim.134@example.com,south,May 23 2026
+135,Tim Perlman,tim.135@example.com,SOUTH,2026-05-24T10:24:00
+136,Anita Allen,anita.136@example.com,EAST,2026-05-25T10:25:00
+137,Tim Turing,tim.137@example.com,west,May 26 2026
+138,Guido Allen,guido.138@example.com,west,May 27 2026
+139,Tim Hopper,tim.139@example.com,West,05/28/2026
+140,Ken Liskov,ken.140@example.com,north,2026-06-01
+141,Alan Torvalds,alan.141@example.com,west,2026-06-02T10:02:00
+142,Alan Johnson,alan.142@example.com,west,2026-06-03
+143,Hedy Ritchie,HEDY.143@EXAMPLE.COM,north,2026-06-04T10:04:00
+144,Hedy Lovelace,hedy.144@example.com,west,2026-06-05T10:05:00
+145,Donald Berners-Lee,donald.145@example.com,east,2026-06-06T10:06:00
+146,Sophie Lovelace,sophie.146@example.com,north,Jun 7 2026
+147,Donald Lamarr,donald.147@example.com,North ,06/08/2026
+ 148,Sophie Hamilton,sophie.148@example.com,West,2026-06-09T10:09:00
+149,Sophie Lovelace,sophie.149@example.com,North ,Jun 10 2026
+150,Donald Johnson,donald.150@example.com,EAST,2026-06-11T10:11:00
+151,Alan Perlman,alan.151@example.com,SOUTH,2026-06-12
+152,Donald Perlman,donald.152@example.com,east,2026-06-13
+153,Hedy Torvalds,hedy.153@example.com,south,06/14/2026
+154,Grace Turing,GRACE.154@EXAMPLE.COM,North ,Jun 15 2026
+155,Dennis Allen,dennis.155@example.com,north,Jun 16 2026
+156,Donald Turing,donald.156@example.com,North ,Jun 17 2026
+157,Linus Allen,linus.157@example.com,east,2026-06-18
+158,Katherine Hamilton,katherine.158@example.com,East ,2026-06-19
+159,,ada.159@example.com,west,2026-06-20
+160,Alan Hamilton,alan.160@example.com,EAST,2026-06-21T10:21:00
+161,Margaret Perlman,margaret.161@example.com,west,2026-06-22T10:22:00
+162,Ken Knuth,ken.162@example.com,north,06/23/2026
+163,Margaret Knuth,margaret.163@example.com,EAST,Jun 24 2026
+164,Margaret Perlman,margaret.164@example.com,east,Jun 25 2026
+165,Donald Ritchie,DONALD.165@EXAMPLE.COM,west,2026-06-26
+166,Frances Hopper,frances.166@example.com,West,2026-06-27
+167,Grace Liskov,grace.167@example.com,SOUTH,2026-06-28T10:28:00
+168,Katherine Hopper,katherine.168@example.com,SOUTH,Jul 1 2026
+169,Ada Lamarr,ada.169@example.com,North ,2026-07-02T10:02:00
+170,Margaret Ritchie,margaret.170@example.com,north,2026-07-03T10:03:00
+171,Alan Ritchie,alan.171@example.com,EAST,Jul 4 2026
+172,Anita Knuth,anita.172@example.com,south,2026-07-05T10:05:00
+173,Hedy Lamarr,hedy.173@example.com,West,Jul 6 2026
+174,Frances Lamarr,frances.174@example.com,East ,Jul 7 2026
+175,Tim Hamilton,tim.175@example.com,south,2026-07-08T10:08:00
+176,Edsger Lovelace,EDSGER.176@EXAMPLE.COM,south,Jul 9 2026
+177,Barbara Allen,barbara.177@example.com,west,Jul 10 2026
+178,Ken Liskov,ken.178@example.com,West,Jul 11 2026
+179,Anita Lovelace,anita.179@example.com,SOUTH,07/12/2026
+180,Linus Hamilton,linus.180@example.com,North ,2026-07-13T10:13:00
+181,Anita Knuth,anita.181@example.com,west,2026-07-14T10:14:00
+182,Sophie Allen,sophie.182@example.com,east,2026-07-15
+183,Radia Hamilton,radia.183@example.com,North ,07/16/2026
+184,Radia Dijkstra,radia.184@example.com,north,2026-07-17T10:17:00
+ 185,Anita Thompson,anita.185@example.com,north,2026-07-18T10:18:00
+186,Anita Liskov,anita.186@example.com,north,2026-07-19T10:19:00
+187,Ken Turing,KEN.187@EXAMPLE.COM,West,07/20/2026
+188,Margaret Johnson,margaret.188@example.com,west,Jul 21 2026
+189,Margaret Johnson,margaret.189@example.com,SOUTH,07/22/2026
+190,Dennis Hamilton,dennis.190@example.com,south,Jul 23 2026
+191,Guido Perlman,guido.191@example.com,West,2026-07-24
+192,Dennis Turing,dennis.192@example.com,west,Jul 25 2026
+193,Barbara Turing,barbara.193@example.com,east,07/26/2026
+194,Ken Lovelace,ken.194@example.com,east,Jul 27 2026
+195,Alan Dijkstra,alan.195@example.com,south,2026-07-28
+196,Ada Perlman,ada.196@example.com,West,2026-08-01T10:01:00
+197,Sophie Allen,sophie.197@example.com,north,08/02/2026
+198,Grace Turing,GRACE.198@EXAMPLE.COM,south,2026-08-03
+199,Linus Ritchie,linus.199@example.com,south,2026-08-04
+200,Grace Torvalds,grace.200@example.com,EAST,Aug 5 2026
+C-201,Broken Id,broken@example.com,east,2026-02-30
+5,Anita Hamilton,anita.5@example.com,SOUTH,2026-01-06T10:06:00

@@ -1,0 +1,10 @@
+# Adversarial: the export format changed (renamed and reordered columns).
+request: >-
+  Load the latest orders export into the orders table with columns order_id, customer_id,
+  order_date and amount. Note that the export system was upgraded and its column names
+  may differ from these.
+expected_result: one row per order
+target_table: orders_v2
+budget: {max_usd: 0.50}
+sources:
+  - {name: orders_export, kind: csv, path: ../fixtures/drift/orders_export_v2.csv}

@@ -1,0 +1,9 @@
+# Adversarial: about 5% of lines are malformed (too many or too few fields).
+request: >-
+  Load the payments export. Methods should be lower case, amounts numbers and paid_at a
+  date. Malformed lines must not stop the load.
+expected_result: one row per well-formed payment
+target_table: payments
+budget: {max_usd: 0.40}
+sources:
+  - {name: payments, kind: csv, path: ../fixtures/corrupt/payments.csv}

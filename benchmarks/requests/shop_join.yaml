@@ -1,0 +1,16 @@
+# The showcase demo request.
+request: >-
+  Load the customers and orders CSV exports, clean them up, and join each order to its
+  customer. Amounts arrive as text like "$1,234.50" or "12.00 USD" and must become numbers;
+  order dates come in several formats and must become real dates; status values should be
+  lower-case and trimmed. Remove duplicate orders and duplicate customers. Keep only orders
+  whose customer exists. Write the result to the database.
+expected_result: one row per valid order with order_id, customer_id, customer name, region, order_date, amount and status
+target_table: customer_orders
+quality_rules:
+  - order amounts are never negative
+  - every order_id appears once
+budget: {max_usd: 0.60}
+sources:
+  - {name: customers, kind: csv, path: ../fixtures/shop/customers.csv, description: CRM customer export}
+  - {name: orders, kind: csv, path: ../fixtures/shop/orders.csv, description: web-shop order export}

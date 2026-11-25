@@ -1,0 +1,9 @@
+request: >-
+  The readings JSON holds temperature readings from devices at several sites, nested under
+  a device object. Some temperatures are text ("21.5 C"), null or the word "err". Produce
+  the average, minimum and maximum temperature per site per day, ignoring unusable readings.
+expected_result: one row per site and day
+target_table: site_daily_temperature
+budget: {max_usd: 0.50}
+sources:
+  - {name: readings, kind: json, path: ../fixtures/sensors/readings.json}

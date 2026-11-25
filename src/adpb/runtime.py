@@ -32,7 +32,7 @@ from mcp.client.client import Client
 from mcp.client.stdio import StdioServerParameters
 
 from adpb.config import Settings, load_settings
-from adpb.contracts import DataRequest, PipelinePlan, RunStatus
+from adpb.contracts import DataRequest, PipelinePlan, RunStatus, SourceKind
 from adpb.llm.base import ModelClient
 from adpb.mcp_servers.artifacts import build_artifacts_server
 from adpb.mcp_servers.memory import HashEmbedding, build_memory_server
@@ -43,6 +43,7 @@ from adpb.observability.events import EventLog
 from adpb.observability.redact import Redactor
 from adpb.orchestrator.engine import Orchestrator, restore_failed_run
 from adpb.tools.gateway import ToolGateway
+from adpb.tools.sources import fetch_api_snapshot
 from adpb.workspace import Workspace
 
 INHERITED_ENV = ("PATH", "HOME", "LANG", "TMPDIR", "DOCKER_HOST", "USER")
@@ -94,6 +95,9 @@ class RunHandle:
         ws = Workspace.create(settings.runs_dir, run_id)
         for f in source_files:
             shutil.copy2(f, ws.sources_dir / Path(f).name)
+        for src in request.sources:  # API sources: fetch once, on the host, allow-listed
+            if src.kind is SourceKind.API:
+                fetch_api_snapshot(src, ws.sources_dir, settings.api_allowed_hosts)
         ws.request_path.write_text(request.model_dump_json(indent=2))
         return cls(ws, settings, model=model, transport=transport)
 

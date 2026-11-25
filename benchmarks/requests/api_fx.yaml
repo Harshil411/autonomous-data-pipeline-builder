@@ -1,0 +1,10 @@
+request: >-
+  Convert every invoice amount to US dollars using the exchange-rate API (rates are units
+  of currency per 1 USD). Currency codes may be lower case. Invoices in a currency the API
+  does not know cannot be converted.
+expected_result: one row per convertible invoice with amount, currency and amount_usd
+target_table: invoices_usd
+budget: {max_usd: 0.50}
+sources:
+  - {name: invoices, kind: csv, path: ../fixtures/api/invoices.csv}
+  - {name: fx_rates, kind: api, url: "http://127.0.0.1:8765/fx_rates.json"}
