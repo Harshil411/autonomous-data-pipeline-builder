@@ -9,7 +9,8 @@
 One picture answers the three questions a visitor asks: where is the data, who is working
 on it, and what stops it reaching the database. It is a single self-contained SVG, so it
 looks the same live, in replay and in a screenshot. Every node states its status in words,
-never by colour alone; the colours and the motion live in `theme.py` (classes below).
+never by colour alone. It carries no colours of its own: the colours and the motion come
+from `theme.py` through the classes below, so the same SVG serves the dark and light looks.
 
 Classes the stylesheet relies on (and the tests check):
     node stage live|passed|failed|pending     node source
@@ -41,16 +42,21 @@ ICONS = {
     "validator": '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/>',
 }
 
-DEFS = """<defs>
-<radialGradient id="glow-live"><stop offset="0" stop-color="#FF8A3D" stop-opacity=".34"/>
-<stop offset="1" stop-color="#FF8A3D" stop-opacity="0"/></radialGradient>
-<radialGradient id="glow-gate"><stop offset="0" stop-color="#C83468" stop-opacity=".38"/>
-<stop offset="1" stop-color="#C83468" stop-opacity="0"/></radialGradient>
-<radialGradient id="glow-done"><stop offset="0" stop-color="#7FD1AE" stop-opacity=".32"/>
-<stop offset="1" stop-color="#7FD1AE" stop-opacity="0"/></radialGradient>
-<linearGradient id="gate-fill" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="#A12A55"/><stop offset="1" stop-color="#5E1530"/></linearGradient>
-</defs>"""
+# Gradients for the glows and the gate. The stops carry classes, not colours: the stylesheet
+# gives them the active look's colours, so this SVG is identical in Night and in Day.
+DEFS = (
+    '<defs>'
+    '<radialGradient id="glow-live"><stop class="s-live in" offset="0"/>'
+    '<stop class="s-live out" offset="1"/></radialGradient>'
+    '<radialGradient id="glow-gate"><stop class="s-gate in" offset="0"/>'
+    '<stop class="s-gate out" offset="1"/></radialGradient>'
+    '<radialGradient id="glow-done"><stop class="s-done in" offset="0"/>'
+    '<stop class="s-done out" offset="1"/></radialGradient>'
+    '<linearGradient id="gate-fill" x1="0" y1="0" x2="1" y2="1">'
+    '<stop class="s-gate-1" offset="0"/><stop class="s-gate-2" offset="1"/></linearGradient>'
+    '<marker id="tip" orient="auto" markerWidth="7" markerHeight="7" refX="1" refY="3.5">'
+    '<path d="M0,0 L7,3.5 L0,7 Z" fill="context-stroke"/></marker>'
+    '</defs>')
 
 
 def _depths(v: RunView) -> dict[str, int]:
@@ -172,8 +178,6 @@ def render_graph(v: RunView) -> str:
         out.append(f'<path class="{name}" d="M{x1:.0f},{y1:.0f} C{mid:.0f},{y1:.0f} '
                    f'{mid:.0f},{y2:.0f} {x2 - 7:.0f},{y2:.0f}" marker-end="url(#tip)"/>')
 
-    out.append('<marker id="tip" orient="auto" markerWidth="7" markerHeight="7" refX="1" '
-               'refY="3.5"><path d="M0,0 L7,3.5 L0,7 Z" fill="context-stroke"/></marker>')
     for s in v.stages.values():
         for i in s.inputs:
             if i not in pos:

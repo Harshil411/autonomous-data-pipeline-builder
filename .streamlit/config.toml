@@ -1,13 +1,8 @@
-# The "Night" theme. Our own markup is styled in app/theme.py; these values make Streamlit's
-# built-in widgets (inputs, tables, tabs) match it.
+# Two looks: Night (dark, the default) and Day (light). Our own markup is styled in
+# app/theme.py; the [theme.dark] and [theme.light] sections below make Streamlit's built-in
+# widgets (inputs, tables, tabs) match whichever look is active. Keep the colours here in
+# step with THEMES in app/theme.py.
 [theme]
-base = "dark"
-primaryColor = "#FF8A3D"
-backgroundColor = "#09090B"
-secondaryBackgroundColor = "#131316"
-textColor = "#EDEDEF"
-borderColor = "#34343B"
-linkColor = "#FFB37A"
 baseRadius = "0.7rem"
 showWidgetBorder = true
 # Geist and Geist Mono are bundled in app/static/ (SIL Open Font License), so the booth
@@ -27,6 +22,22 @@ family = "Geist Mono"
 url = "app/static/GeistMono.woff2"
 weight = "100 900"
 style = "normal"
+
+[theme.dark]
+primaryColor = "#FF8A3D"
+backgroundColor = "#09090B"
+secondaryBackgroundColor = "#131316"
+textColor = "#EDEDEF"
+borderColor = "#34343B"
+linkColor = "#FFB37A"
+
+[theme.light]
+primaryColor = "#E5650F"
+backgroundColor = "#F6F6F7"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#131316"
+borderColor = "#D2D2D9"
+linkColor = "#9A4300"
 
 [server]
 headless = true

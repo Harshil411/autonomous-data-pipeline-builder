@@ -142,14 +142,33 @@ def live_view(run_id: str) -> None:
     run_dashboard(view, root, live=True, on_decide=decide)
 
 
+RUN_ID = re.compile(r"run-[A-Za-z0-9-]+")  # what a run folder is called; nothing else is read
+
+
+def current_run() -> str | None:
+    """The run this page is showing, if any. It is kept in the session and also in the
+    address bar (?run=...), so a page reload - including the one that switches between
+    the dark and light looks - comes back to the same run instead of the empty form."""
+    run_id = st.session_state.get("run_id") or st.query_params.get("run")
+    if run_id and RUN_ID.fullmatch(run_id) and (load_settings().runs_dir / run_id).is_dir():
+        st.session_state["run_id"] = run_id
+        st.query_params["run"] = run_id
+        return run_id
+    st.session_state.pop("run_id", None)
+    if "run" in st.query_params:
+        del st.query_params["run"]
+    return None
+
+
 def main() -> None:
-    run_id = st.session_state.get("run_id")
+    run_id = current_run()
     if not run_id:
         new_run_form()
         return
     _, right = st.columns([7, 1])
     if right.button("New request", width="stretch"):
         st.session_state.pop("run_id")
+        del st.query_params["run"]
         st.rerun()
     live_view(run_id)
 

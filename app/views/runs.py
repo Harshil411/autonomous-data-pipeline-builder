@@ -48,15 +48,19 @@ def run_picker(runs: list[dict]) -> str:
     screen away from the graph, which has to be readable from across the table."""
     by_id = {r["run"]: r for r in runs}
     if st.session_state.get("selected_run") not in by_id:
-        st.session_state["selected_run"] = runs[0]["run"]
+        # a fresh session (first visit, or a reload): take the run named in the address bar
+        asked = st.query_params.get("run")
+        st.session_state["selected_run"] = asked if asked in by_id else runs[0]["run"]
 
     def label(run_id: str) -> str:
         r = by_id[run_id]
         word = STATUS_WORDS.get(r["status"], r["status"])
         return ", ".join(x for x in (word, r["when"], r["detail"] or r["request"][:48]) if x)
 
-    return st.selectbox("Run", list(by_id), format_func=label, key="selected_run",
-                        on_change=lambda: st.session_state.pop("replaying", None))
+    run_id = st.selectbox("Run", list(by_id), format_func=label, key="selected_run",
+                          on_change=lambda: st.session_state.pop("replaying", None))
+    st.query_params["run"] = run_id  # so a reload comes back to this run
+    return run_id
 
 
 @st.fragment(run_every=0.6)

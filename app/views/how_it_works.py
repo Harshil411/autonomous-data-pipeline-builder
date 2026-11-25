@@ -6,35 +6,40 @@ import pandas as pd
 import streamlit as st
 
 from app.components import page_title
+from app.theme import THEMES, active_mode
 
-# Colours match the Night theme: light text on dark nodes, maroon for the person,
-# a brighter outline for the Orchestrator.
-ARCH = """
-digraph G {
+
+def arch(t: dict[str, str]) -> str:
+    """The architecture diagram (Graphviz), coloured from the active look's tokens:
+    maroon for the person, a strong outline for the Orchestrator."""
+    return f"""
+digraph G {{
   rankdir=LR; bgcolor="transparent"; nodesep=0.35; ranksep=0.55;
-  node [shape=box, style="rounded,filled", fillcolor="#131316", color="#4A4A54",
-        fontcolor="#EDEDEF", fontname="Helvetica", fontsize=12, margin="0.18,0.08"];
-  edge [color="#6E6E78", fontcolor="#9A9AA3", fontname="Helvetica", fontsize=10];
-  you [label="You\\n(request, approval)", fillcolor="#5E1530", color="#E0668F"];
-  orch [label="Orchestrator\\nplain code, no LLM\\norder, retries, budget", color="#EDEDEF",
-        penwidth=2];
-  subgraph cluster_agents { label="LLM agents (Claude)"; color="#34343B"; fontcolor="#9A9AA3";
-    fontname="Helvetica";
+  node [shape=box, style="rounded,filled", fillcolor="{t['surface']}", color="{t['line-3']}",
+        fontcolor="{t['text']}", fontname="Helvetica", fontsize=12, margin="0.18,0.08"];
+  edge [color="{t['faint']}", fontcolor="{t['muted']}", fontname="Helvetica", fontsize=10];
+  you [label="You\\n(request, approval)", fillcolor="{t['gate-2']}",
+       color="{t['maroon-line']}", fontcolor="{t['gate-text']}"];
+  orch [label="Orchestrator\\nplain code, no LLM\\norder, retries, budget",
+        color="{t['text']}", penwidth=2];
+  subgraph cluster_agents {{ label="LLM agents (Claude)"; color="{t['line-2']}";
+    fontcolor="{t['muted']}"; fontname="Helvetica";
     planner [label="Planner"]; coder [label="Stage Coder"]; tester [label="Tester"];
-    debugger [label="Debugger"]; validator [label="Validator"]; }
-  subgraph cluster_mcp { label="MCP servers (the only way to reach a tool)"; color="#34343B";
-    fontcolor="#9A9AA3"; fontname="Helvetica";
+    debugger [label="Debugger"]; validator [label="Validator"]; }}
+  subgraph cluster_mcp {{ label="MCP servers (the only way to reach a tool)";
+    color="{t['line-2']}"; fontcolor="{t['muted']}"; fontname="Helvetica";
     sandbox [label="sandbox\\nDocker, no network"]; memory [label="memory\\nChromaDB"];
     artifacts [label="artifacts\\nversioned files"]; git [label="git\\nmcp-server-git"];
-    warehouse [label="warehouse\\nSQLite, staging + gate"]; }
+    warehouse [label="warehouse\\nSQLite, staging + gate"]; }}
   you -> orch [label="request"]; orch -> you [label="approve?"];
   orch -> planner; orch -> coder; orch -> tester; orch -> debugger; orch -> validator;
   planner -> memory [style=dashed]; coder -> memory [style=dashed];
   debugger -> memory [style=dashed]; debugger -> sandbox [style=dashed];
   tester -> sandbox; validator -> sandbox;
   orch -> artifacts; orch -> git; orch -> warehouse [label="only writer"];
-}
+}}
 """
+
 
 AGENTS = [
     ("Planner", "the whole request, source profiles", "memory search",
@@ -77,7 +82,7 @@ def main() -> None:
         "by a different agent than the code, before the code exists, so the code cannot grade "
         "itself. Pass or fail is always decided by running code in a sandbox, never by a "
         "model agreeing with another model.")
-    st.graphviz_chart(ARCH, width="stretch")
+    st.graphviz_chart(arch(THEMES[active_mode()]), width="stretch")
     st.markdown("## What each agent sees, uses and cannot do")
     st.dataframe(pd.DataFrame(AGENTS, columns=["agent", "sees", "tools", "returns", "cannot"]),
                  hide_index=True, width="stretch")

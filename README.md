@@ -51,6 +51,8 @@ uv run streamlit run app/Home.py
 uv run adpb run benchmarks/requests/shop_join.yaml     # builds, then asks before loading
 ```
 
+The app has two looks: Night (dark, the default) and Day (light). The button at the top right switches between them; the browser remembers the choice. Both use one stylesheet (`app/theme.py`), and the run on screen is kept in the address bar (`?run=...`) so switching, or refreshing the page, never loses it.
+
 On macOS with Colima, keep the project inside your home folder: Colima only shares the home
 folder with its VM, so the sandbox could not see files elsewhere.
 

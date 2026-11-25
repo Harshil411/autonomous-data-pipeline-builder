@@ -21,7 +21,7 @@ import pandas as pd
 import streamlit as st
 
 from app.graph import render_graph
-from app.theme import AGENT_COLORS, CSS
+from app.theme import active_mode, css
 from app.viewmodel import RunView, agent_label, hero, journey_step, proofs
 
 STATUS_WORDS = {"running": "Working", "awaiting_approval": "Waiting for your approval",
@@ -39,7 +39,48 @@ def html(markup: str) -> None:
 
 
 def setup_page() -> None:
-    html(CSS)
+    """Write the stylesheet for whichever look (dark or light) the browser is showing."""
+    html(css(active_mode()))
+
+
+# The pages whose address the browser may be on when it remembers the look (see below).
+_PATHS = ["/", "/runs", "/benchmarks", "/how_it_works"]
+_SWITCH_JS = """<script>
+(function () {
+  // Streamlit keeps the chosen theme in the browser, one entry per page address, as
+  // "Light" or "Dark". This writes that entry for every page and reloads so it applies.
+  // Until someone chooses, the app opens in Night (dark) whatever the laptop's setting.
+  var want = %s;
+  var top = window.top, store = top.localStorage;
+  var mine = "stActiveTheme-" + top.location.pathname + "-v2";
+  var keys = %s.map(function (p) { return "stActiveTheme-" + p + "-v2"; });
+  if (keys.indexOf(mine) < 0) keys.push(mine);
+  var stored = store.getItem(mine);
+  var chosen = stored === '"Light"' || stored === '"Dark"';
+  var target = want || (chosen ? null : "Dark");
+  if (!target) return;
+  if (!want) {  // apply the default at most once per tab, so a reload can never loop
+    if (top.sessionStorage.getItem("adpb-look-defaulted")) return;
+    top.sessionStorage.setItem("adpb-look-defaulted", "1");
+  }
+  keys.forEach(function (k) { store.setItem(k, JSON.stringify(target)); });
+  top.location.reload();
+})();
+</script>"""
+
+
+def look_switch() -> None:
+    """The header button that flips between Night (dark) and Day (light).
+
+    Streamlit applies a theme in the browser, not from Python, so the button asks the
+    browser to remember the other look and reload. A reload starts a fresh session, which
+    is why the Build and Past runs pages keep their run in the address bar."""
+    other = "light" if active_mode() == "dark" else "dark"
+    if st.button(other.title(), key="look", width="stretch",
+                 icon=f":material/{other}_mode:", help=f"Switch to the {other} look"):
+        st.session_state["_look"] = other.title()
+    want = st.session_state.pop("_look", None)
+    st.html(_SWITCH_JS % (json.dumps(want), json.dumps(_PATHS)), unsafe_allow_javascript=True)
 
 
 def page_title(title: str, subtitle: str = "") -> None:
@@ -94,7 +135,7 @@ def activity_rows(v: RunView, limit: int) -> None:
         return
     rows = []
     for a in list(reversed(v.activity))[:limit]:
-        color = AGENT_COLORS.get(a.agent, "#6B7180")
+        color = f"var(--agent-{a.agent}, var(--muted))"  # set per look in theme.py
         why = f'<div class="why">{escape(a.detail[:300])}</div>' if a.detail else ""
         rows.append(f'<div class="act {a.tone}" style="border-left-color:{color}">'
                     f'<div class="who" style="color:{color}">{agent_label(a.agent)}</div>'
@@ -115,8 +156,8 @@ def approval_gate(v: RunView, live: bool, on_decide=None, replay_note: str = "")
         return  # nothing to decide (the headline already states any outcome)
     p = proofs(v)
     failed = req.get("failed_checks") or []
-    good = TICK.format(color="#7FD1AE", path="M5 12.5l4.5 4.5L19 7")
-    warn = TICK.format(color="#FFB37A",
+    good = TICK.format(color="var(--green)", path="M5 12.5l4.5 4.5L19 7")
+    warn = TICK.format(color="var(--orange-text)",
                        path="M12 7v6M12 17h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0")
     existing = req.get("existing_production_rows")
     replace = (f"Loading replaces {existing:,} existing rows." if existing
