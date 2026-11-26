@@ -99,10 +99,20 @@ def test_runs_page_lists_the_run_and_renders_it(home, paused_run):
     assert any(b.label.startswith("Approve and load 4 rows") for b in at.button)
 
 
-@pytest.mark.parametrize("page", ["benchmarks.py", "how_it_works.py"])
-def test_static_pages_render(home, page):
-    at = AppTest.from_file(str(PAGES / page), default_timeout=30).run()
+def test_about_page_holds_how_it_works_and_the_benchmarks(home):
+    # One "About" page for the two things a visitor can skip but a grader will ask for.
+    at = AppTest.from_file(str(PAGES / "about.py"), default_timeout=30).run()
     assert not at.exception
+    assert [t.label for t in at.tabs][:2] == ["How it works", "Benchmarks"]
+    page = " ".join(m.value for m in at.markdown)
+    assert "Why more than one agent" in page          # from How it works
+    assert "Five things it won't do" in page
+
+
+def test_header_has_three_pages(home):
+    at = AppTest.from_file(str(PAGES.parent / "Home.py"), default_timeout=30).run()
+    assert not at.exception
+    assert [link.proto.label for link in at.get("page_link")] == ["Build", "Past runs", "About"]
 
 
 def test_a_run_survives_a_page_reload(home, paused_run):

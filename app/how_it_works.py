@@ -1,11 +1,12 @@
-"""How it works: the design, for visitors and for Q&A at the table."""
+"""How it works: the design, for visitors and for Q&A at the table.
+
+Shown as the "How it works" tab of the About page (app/views/about.py)."""
 
 from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
 
-from app.components import page_title
 from app.theme import THEMES, active_mode
 
 
@@ -71,10 +72,7 @@ PROMISES = [
 ]
 
 
-def main() -> None:
-    page_title("Agents for judgment, plain code for control",
-               "A bounded multi-agent system: five Claude agents do the thinking, and an "
-               "orchestrator with no AI in it decides what happens next.")
+def render() -> None:
     st.markdown("## Why more than one agent")
     st.markdown(
         "Each job needs different information and different permissions. The planner needs "
@@ -102,6 +100,3 @@ def main() -> None:
     st.markdown("## Five things it won't do, and the test that proves each")
     st.dataframe(pd.DataFrame(PROMISES, columns=["it won't", "because", "test"]),
                  hide_index=True, width="stretch")
-
-
-main()

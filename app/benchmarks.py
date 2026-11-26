@@ -1,4 +1,6 @@
-"""Benchmark results (requirement 26): success rate, retries per stage, time and cost."""
+"""Benchmark results (requirement 26): success rate, retries per stage, time and cost.
+
+Shown as the "Benchmarks" tab of the About page (app/views/about.py)."""
 
 from __future__ import annotations
 
@@ -9,21 +11,25 @@ import pandas as pd
 import streamlit as st
 
 from adpb.config import REPO_ROOT
-from app.components import html, page_title
+from app.components import html
 
 RESULTS = REPO_ROOT / "benchmarks" / "results"
 
 
-def main() -> None:
-    page_title("Eight dirty-data requests, scored on the final table",
-               "A run counts as a success only if the loaded table holds the right rows, not "
-               "merely because it finished.")
+def render() -> None:
+    st.markdown("## Eight dirty-data requests, scored on the final table")
+    st.markdown("A run counts as a success only if the loaded table holds the right rows, not "
+                "merely because it finished.")
     files = sorted(RESULTS.glob("bench-*.json"), reverse=True) if RESULTS.exists() else []
     if not files:
         st.info("No benchmark results yet. Run `uv run adpb bench` (it calls the model and "
                 "costs money; about $0.10-0.40 per request).")
         return
-    pick = st.selectbox("Result file", [f.name for f in files])
+    names = [f.name for f in files]
+    # Open on the fullest result (the whole suite), not on a later re-run of one request.
+    sizes = [len(json.loads(f.read_text()).get("runs", [])) for f in files]
+    pick = st.selectbox("Result file", names, index=sizes.index(max(sizes)),
+                        format_func=lambda name: f"{name}  ({sizes[names.index(name)]} runs)")
     report = json.loads((RESULTS / pick).read_text())
     s = report["summary"]
     items = [("success rate", f"{s['success_rate']:.0%}"),
@@ -52,6 +58,3 @@ def main() -> None:
         f'</div><div class="val">${r["usd"]:.3f}</div></div>' for r in report["runs"])
     st.markdown("**Cost per run**")
     html(f'<div class="bars">{rows}</div>')
-
-
-main()

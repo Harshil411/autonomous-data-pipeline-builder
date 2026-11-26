@@ -46,7 +46,7 @@ def setup_page() -> None:
 
 
 # The pages whose address the browser may be on when it remembers the look (see below).
-_PATHS = ["/", "/runs", "/benchmarks", "/how_it_works"]
+_PATHS = ["/", "/runs", "/about"]
 _SWITCH_JS = """<script>
 (function () {
   // Streamlit keeps the chosen theme in the browser, one entry per page address, as
@@ -57,14 +57,20 @@ _SWITCH_JS = """<script>
   var mine = "stActiveTheme-" + top.location.pathname + "-v2";
   var keys = %s.map(function (p) { return "stActiveTheme-" + p + "-v2"; });
   if (keys.indexOf(mine) < 0) keys.push(mine);
-  var stored = store.getItem(mine);
-  var chosen = stored === '"Light"' || stored === '"Dark"';
-  var target = want || (chosen ? null : "Dark");
-  if (!target) return;
-  if (!want) {  // apply the default at most once per tab, so a reload can never loop
-    if (top.sessionStorage.getItem("adpb-look-defaulted")) return;
-    top.sessionStorage.setItem("adpb-look-defaulted", "1");
+  function pick(k) {
+    var v = store.getItem(k);
+    return v === '"Light"' || v === '"Dark"' ? JSON.parse(v) : null;
   }
+  var target = want;
+  if (!target && !pick(mine)) {
+    // This page has no choice stored: follow the choice made on another page, else Night.
+    target = keys.map(pick).filter(Boolean)[0] || "Dark";
+    // Never loop: at most three automatic reloads per browser tab.
+    var n = Number(top.sessionStorage.getItem("adpb-look-auto") || 0);
+    if (n >= 3) return;
+    top.sessionStorage.setItem("adpb-look-auto", String(n + 1));
+  }
+  if (!target) return;
   keys.forEach(function (k) { store.setItem(k, JSON.stringify(target)); });
   top.location.reload();
 })();
