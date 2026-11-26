@@ -5,7 +5,7 @@ run - the same way the replay screen uses them.
 """
 
 from app.graph import render_graph
-from app.viewmodel import build_view, hero, journey_step, proofs
+from app.viewmodel import build_view, hero, journey_step, plain_check, proofs
 
 
 def _cut_after(events, pred):
@@ -27,7 +27,7 @@ def _at_gate(recorded):
 def test_graph_draws_every_node_with_a_text_status(recorded):
     svg = render_graph(build_view(recorded))
     assert svg.startswith("<svg") and "aria-label" in svg
-    for name in ("raw.customers", "clean_orders", "customer_orders", "Your approval",
+    for name in ("customers.csv", "clean_orders", "customer_orders", "Your approval",
                  "Database", "Orchestrator"):
         assert name in svg
     assert "Passed" in svg  # status is written, not only coloured
@@ -159,3 +159,30 @@ def test_graph_shows_where_the_stages_will_go_while_the_planner_works(recorded):
     assert "Being planned" in svg                    # a placeholder, not an empty gap
     assert 'class="node gate locked"' in svg
     assert svg.count('class="agent live"') == 1      # the Planner
+
+
+# -- plain words: nothing a first-time visitor has to decode ---------------------------------
+
+
+def test_sources_are_named_by_their_file_not_by_an_internal_dataset_name(recorded):
+    svg = render_graph(build_view(recorded))
+    assert "customers.csv" in svg and "orders.csv" in svg
+    assert "raw.customers" not in svg
+
+
+def test_agent_cards_say_how_often_an_agent_worked_in_plain_words(recorded):
+    svg = render_graph(_debugging(recorded))
+    assert "worked once" in svg
+    assert "model call" not in svg  # the technical figures live under Details
+
+
+def test_a_failed_check_is_said_in_plain_words():
+    assert plain_check("clean_orders.customer_id.foreign_key") == (
+        "customer_id in clean_orders points to a row that does not exist")
+    assert plain_check("clean_orders.status.allowed_values") == (
+        "status in clean_orders has a value that is not allowed")
+    assert plain_check("customer_orders.*.row_count") == (
+        "customer_orders has an unexpected number of rows")
+    # an unknown kind still reads as a sentence, and nothing is lost
+    assert plain_check("t.amount.some_new_rule") == "some new rule check on amount in t"
+    assert plain_check("not-a-rule-id") == "not-a-rule-id"

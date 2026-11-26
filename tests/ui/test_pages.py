@@ -64,6 +64,8 @@ def test_approval_gate_loads_the_data_when_approved(home, paused_run):
     at.session_state["run_id"] = paused_run.ws.run_id
     at.run()
     assert not at.exception
+    # while it waits, one button leads back to an empty request
+    assert any(b.label == "New request" for b in at.button)
     load = next(b for b in at.button if b.label.startswith("Approve and load 4 rows"))
     at.text_input[0].set_value("Booth visitor")
     load.click().run()
@@ -74,6 +76,13 @@ def test_approval_gate_loads_the_data_when_approved(home, paused_run):
     con = sqlite3.connect(paused_run.settings.warehouse_path)
     assert con.execute("select count(*) from customer_orders").fetchone()[0] == 4
     con.close()
+    # the finished screen shows the result and the next step, not just a headline
+    at.run()
+    assert not at.exception
+    page = " ".join(m.value for m in at.markdown)
+    assert "now in the database" in page
+    assert len(at.dataframe) >= 1
+    assert any(b.label == "Build another" for b in at.button)
 
 
 def test_runs_page_lists_the_run_and_renders_it(home, paused_run):
@@ -82,6 +91,8 @@ def test_runs_page_lists_the_run_and_renders_it(home, paused_run):
     # runs are picked from one dropdown, so the graph keeps the full width of the screen
     assert at.selectbox(key="selected_run").value == paused_run.ws.run_id
     assert any(b.label == "Replay this run" for b in at.button)
+    # "Resume" is offered only for a run that failed
+    assert not any(b.label.startswith("Resume") for b in at.button)
     # the run is drawn as the live graph, with the gate asking for a person
     assert any('class="node gate needed"' in m.value for m in at.markdown)
     # a paused run can be decided right here
@@ -124,3 +135,20 @@ def test_header_carries_the_logo_and_the_name(home):
     # the mark is a drawing of the product: two sources merging into one result
     assert '<svg class="logo"' in mark and 'aria-hidden="true"' in mark
     assert "Pipeline Builder" in mark
+
+
+def test_detail_is_one_closed_section_with_three_tabs(home, paused_run):
+    at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30)
+    at.session_state["run_id"] = paused_run.ws.run_id
+    at.run()
+    details = next(e for e in at.expander if e.label == "Details")
+    assert details.proto.expanded is False
+    labels = [t.label for t in at.tabs]
+    assert labels[:3] == ["What happened", "Checks", "Cost"]
+    assert not {"Activity", "Data quality", "Budget", "Report"} & set(labels)
+
+
+def test_own_files_form_does_not_ask_about_databases_up_front(home):
+    at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30).run()
+    next(b for b in at.button if b.key == "preset-custom").click().run()
+    assert not any("SQLite" in t.label for t in at.text_input)
