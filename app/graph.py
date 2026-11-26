@@ -73,8 +73,18 @@ def _depths(v: RunView) -> dict[str, int]:
     return depth
 
 
+STOPPED = ("failed", "budget_exceeded", "rejected")  # run statuses that ended without a load
+
+
+def _fit(text: str, limit: int) -> str:
+    """Cut a name that is too long for its box and say so with an ellipsis."""
+    return text if len(text) <= limit else text[: limit - 1] + "\u2026"
+
+
 def _stage_words(v: RunView, s, first_pending: str | None) -> str:
     limit = v.budget_limits.get("max_retries_per_stage", 3)
+    if s.status in ACTIVE and v.status != "running":
+        return "Stopped here"  # the run ended while this stage was being worked on
     if s.status == "passed":
         return f"Passed, {s.rows_out:,} rows" if s.rows_out is not None else "Passed"
     if s.status == "failed":
@@ -94,12 +104,19 @@ def _agent_words(v: RunView, agent: str, state: str) -> str:
     calls = v.cost["by_agent"].get(agent, {}).get("calls", 0)
     if state == "done":  # plain words here; tokens and cost per agent are under Details
         return {1: "worked once", 2: "worked twice"}.get(calls, f"worked {calls} times")
-    # idle: still to come while the run is going, simply not needed once nothing is left to do
+    # idle: still to come while the run is going; afterwards it either was not needed
+    # (the run got through without it) or never got its turn (the run stopped first)
+    if v.status in STOPPED:
+        return "did not run"
     over = v.finished or v.status == "awaiting_approval"
     return "not needed" if over else "waiting its turn"
 
 
 def _orchestrator_words(v: RunView) -> str:
+    if v.status == "rejected":
+        return "discarded the staged rows after the rejection. The database is unchanged."
+    if v.status in STOPPED:
+        return "stopped the run. Nothing was loaded. Every step is recorded and can be replayed."
     if v.finished:
         re = v.replans
         redesign = f" {re} stage{'s' if re != 1 else ''} redesigned along the way." if re else ""
@@ -161,7 +178,9 @@ def render_graph(v: RunView) -> str:
     states = agent_states(v)
     working = next((a for a, st in states.items() if st == "working"), None)
     current = v.stages.get(v.current_stage) if v.current_stage else None
-    live_stage = current if current is not None and current.status in ACTIVE else None
+    running = v.status == "running"
+    live_stage = (current if running and current is not None and current.status in ACTIVE
+                  else None)
     first_pending = next((s.id for s in v.stages.values()
                           if s.status not in ("passed", *ACTIVE)), None)
 
@@ -179,7 +198,7 @@ def render_graph(v: RunView) -> str:
         glow("live", x + W / 2, y + H / 2, 250)
     if loaded:
         glow("done", db_x + DB_W / 2, mid_y, 260)
-    elif not rejected:
+    elif running or v.status == "awaiting_approval":  # the gate matters while it can open
         glow("gate", gate_x + GATE_W / 2, mid_y, 170)
 
     # 2. lines (under the nodes)
@@ -232,10 +251,11 @@ def render_graph(v: RunView) -> str:
         out.append(f'<rect class="box" width="{w:.0f}" height="{h:.0f}" rx="14"/>')
         tx, anchor = (w / 2, ' text-anchor="middle"') if centre else (18, "")
         ty = h / 2 - (14 if note else 5)
+        # a monospaced name is wider per letter, so it gets fewer letters before the cut
         out.append(f'<text class="title{" mono" if mono else ""}" x="{tx:.0f}" y="{ty:.0f}"'
-                   f'{anchor}>{escape(title[:22])}</text>')
+                   f'{anchor}>{escape(_fit(title, 21 if mono else 22))}</text>')
         out.append(f'<text class="sub" x="{tx:.0f}" y="{ty + 21:.0f}"{anchor}>'
-                   f'{escape(sub[:26])}</text>')
+                   f'{escape(_fit(sub, 26))}</text>')
         if note:
             out.append(f'<text class="note" x="{tx:.0f}" y="{ty + 39:.0f}"{anchor}>'
                        f'{escape(note[:28])}</text>')
@@ -246,11 +266,14 @@ def render_graph(v: RunView) -> str:
         node("source", x, y, W, H, info.get("label") or name, f"{info['rows']:,} rows")
     if planning:
         x, y = pos[PLAN]
-        node("stage pending", x, y, W, H, "Stages", "Being planned")
+        node("stage pending", x, y, W, H, "Stages",
+             "Being planned" if running else "Never planned")
     for s in v.stages.values():
         x, y = pos[s.id]
-        state = ("live" if s.status in ACTIVE else s.status
-                 if s.status in ("passed", "failed") else "pending")
+        if s.status in ACTIVE:  # being worked on - or left half-done by a run that stopped
+            state = "live" if running else "failed"
+        else:
+            state = s.status if s.status in ("passed", "failed") else "pending"
         n = s.rows_quarantined
         aside = f"{n:,} row{'s' if n != 1 else ''} set aside" if n else ""
         node(f"stage {state}", x, y, W, H, s.id, _stage_words(v, s, first_pending), aside,
@@ -271,7 +294,7 @@ def render_graph(v: RunView) -> str:
                f'<rect class="box" width="{width - 2 * PAD:.0f}" height="{BAR_H}" rx="14"/>'
                f'<text class="title" x="20" y="{BAR_H / 2 + 5:.0f}">Orchestrator</text>'
                f'<text class="sub" x="124" y="{BAR_H / 2 + 5:.0f}">'
-               f'{escape(_orchestrator_words(v)[:room])}</text></g>')
+               f'{escape(_fit(_orchestrator_words(v), room))}</text></g>')
     for i, agent in enumerate(LANE):
         state = {"working": "live", "done": "done", "idle": "idle"}[states[agent]]
         x = PAD + i * (agent_w + AGENT_GAP)

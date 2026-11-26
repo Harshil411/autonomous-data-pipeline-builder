@@ -30,7 +30,7 @@ current = st.navigation(PAGES, position="hidden")
 
 # Our own header: the wordmark on the left, one quiet link per page on the right.
 # (Streamlit's built-in top nav sits under its toolbar, which hid it on a 13-inch laptop.)
-cols = st.columns([6.4, 0.7, 1, 0.8, 0.85], vertical_alignment="center")
+cols = st.columns([5, 0.9, 1.2, 1, 1.05], vertical_alignment="center")
 cols[0].markdown(wordmark(), unsafe_allow_html=True)
 for col, page in zip(cols[1:4], PAGES, strict=True):
     col.page_link(page, label=page.title)

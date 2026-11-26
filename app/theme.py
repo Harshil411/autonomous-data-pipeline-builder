@@ -133,7 +133,8 @@ code, pre { font-family: 'Geist Mono', ui-monospace, Menlo, monospace !important
 .wordmark .logo stop.l2 { stop-color: var(--grad-2); }
 [data-testid="stPageLink"] a { border-radius: 999px; padding: .25rem .8rem;
   justify-content: flex-end; }
-[data-testid="stPageLink"] a p { color: var(--muted); font-size: .95rem; }
+[data-testid="stPageLink"] a p { color: var(--muted); font-size: .95rem; white-space: nowrap;
+  overflow: visible; }  /* a page name is never cut short on a narrow window */
 [data-testid="stPageLink"] a:hover { background: var(--surface); }
 [data-testid="stPageLink"] a:hover p { color: var(--text); }
 [data-testid="stPageLink"] a[aria-current="page"] { background: var(--surface);

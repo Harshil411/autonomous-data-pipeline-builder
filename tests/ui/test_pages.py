@@ -91,7 +91,9 @@ def test_runs_page_lists_the_run_and_renders_it(home, paused_run):
     assert not at.exception
     # runs are picked from one dropdown, so the graph keeps the full width of the screen
     assert at.selectbox(key="selected_run").value == paused_run.ws.run_id
-    assert any(b.label == "Replay this run" for b in at.button)
+    # short labels, so the whole control row fits a narrow window; the tooltip says the rest
+    replay = next(b for b in at.button if b.label == "Replay")
+    assert "recording" in replay.help
     # "Resume" is offered only for a run that failed
     assert not any(b.label.startswith("Resume") for b in at.button)
     # the run is drawn as the live graph, with the gate asking for a person

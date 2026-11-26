@@ -196,3 +196,73 @@ def test_an_agent_that_was_never_needed_is_not_left_waiting_when_the_run_is_over
     assert "not needed" in svg and "waiting its turn" not in svg
     # while the run is still going, a resting agent is waiting
     assert "waiting its turn" in render_graph(_debugging(recorded))
+
+
+# -- runs that did not go to plan: long names, and runs that stopped early --------------------
+
+
+def _ev(seq, kind, **kw):
+    return {"run_id": "run-x", "seq": seq, "ts": 1000.0 + seq, "kind": kind, **kw}
+
+
+def _stage(sid, inputs):
+    return {"id": sid, "kind": "clean", "inputs": inputs, "language": "python",
+            "description": "d", "output": {"columns": []}}
+
+
+def _run(stages, statuses, tail=(), source=("orders", "orders.csv")):
+    name, path = source
+    events = [_ev(1, "run_started", request="A request", target_table="t", budget={}, models={},
+                  sources=[{"name": name, "kind": "csv", "path": path, "url": None}]),
+              _ev(2, "source_loaded", source=name, dataset=f"raw.{name}", rows=10, columns=["a"])]
+    if stages:
+        events += [_ev(3, "agent_call", agent="planner", tokens=1, usd=0.0),
+                   _ev(4, "plan_created", plan={"stages": stages, "rationale": ""})]
+    for sid, status, extra in statuses:
+        events.append(_ev(len(events) + 1, "stage_status", stage=sid, status=status, **extra))
+    for kind, extra in tail:
+        events.append(_ev(len(events) + 1, kind, **extra))
+    return build_view(events)
+
+
+def test_long_names_are_cut_with_an_ellipsis_not_at_the_edge_of_the_box():
+    long_stage = "normalise_customer_relationship_records"
+    v = _run([_stage(long_stage, ["raw.crm"])], [(long_stage, "coding", {})],
+             source=("crm", "exports/customer_relationship_export_2026_q4_final.csv"))
+    svg = render_graph(v)
+    assert long_stage not in svg and "normalise_customer_r…" in svg
+    assert "customer_relationship_export_2026_q4_final.csv" not in svg and "…" in svg
+
+
+def test_a_run_that_stopped_shows_no_stage_or_agent_as_still_working():
+    stopped = [("budget_exceeded", {"error": "limit reached"}),
+               ("run_finished", {"status": "budget_exceeded", "error": "limit reached"})]
+    svg = render_graph(_run([_stage("clean_orders", ["raw.orders"])],
+                            [("clean_orders", "coding", {})], stopped))
+    assert 'class="node stage live"' not in svg and 'class="agent live"' not in svg
+    assert 'class="beam"' not in svg
+    assert "Stopped here" in svg and "Being coded" not in svg
+    assert "did not run" in svg            # the agents that never got a turn
+    assert ">Orchestrator<" in svg and "stopped the run" in svg
+
+
+def test_a_run_that_failed_before_planning_does_not_say_it_is_still_planning():
+    failed = [("run_finished", {"status": "failed", "error": "prepare: OutOfBoundsDatetime: x"})]
+    svg = render_graph(_run([], [], failed))
+    assert "Being planned" not in svg and "Never planned" in svg
+
+
+def test_hero_of_a_failed_run_gives_the_reason_in_plain_words():
+    failed = [("run_finished", {"status": "failed", "error":
+               "validate: ModelUnavailable: BadRequestError: Error code: 400 - {'type': 'error'}"})]
+    h = hero(_run([_stage("clean_orders", ["raw.orders"])],
+                  [("clean_orders", "passed", {"attempt": 1, "rows_out": 5})], failed))
+    assert h["tone"] == "stopped" and h["headline"] == "Stopped without loading anything"
+    assert h["sub"] == ("It stopped while checking data quality. The technical reason is "
+                        "under Details.")
+    # a stage that ran out of tries is named
+    stuck = [("run_finished", {"status": "failed", "error": "stage clean_orders: TestFailure"})]
+    h = hero(_run([_stage("clean_orders", ["raw.orders"])],
+                  [("clean_orders", "failed", {"attempt": 3, "error": "TestFailure"})], stuck))
+    assert h["sub"] == ("clean_orders still failed its tests after 3 tries. The technical "
+                        "reason is under Details.")

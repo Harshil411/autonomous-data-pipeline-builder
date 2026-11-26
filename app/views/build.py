@@ -41,9 +41,9 @@ def _source_name(filename: str) -> str:
     return name if name[0].isalpha() else f"s_{name}"
 
 
-def _rows(text: str, per_line: int = 74) -> int:
-    """How many lines the text takes in the request box (about 74 characters fit a line),
-    so the box is as tall as its text and no taller."""
+def _rows(text: str, per_line: int = 66) -> int:
+    """How many lines the text takes in the request box (about 66 characters fit a line on
+    a narrow window), so the box is as tall as its text and no taller."""
     return sum(max(1, -(-len(line) // per_line)) for line in text.splitlines() or [""])
 
 

@@ -51,8 +51,6 @@ uv run streamlit run app/Home.py
 uv run adpb run benchmarks/requests/shop_join.yaml     # builds, then asks before loading
 ```
 
-The app has two looks: Night (dark, the default) and Day (light). The button at the top right switches between them; the browser remembers the choice. Both use one stylesheet (`app/theme.py`), and the run on screen is kept in the address bar (`?run=...`) so switching, or refreshing the page, never loses it.
-
 On macOS with Colima, keep the project inside your home folder: Colima only shares the home
 folder with its VM, so the sandbox could not see files elsewhere.
 
@@ -70,6 +68,47 @@ folder with its VM, so the sandbox could not see files elsewhere.
 | `ADPB_API_ALLOWED_HOSTS` | for API sources | hosts the API ingester may contact |
 | `ADPB_SANDBOX` | no | `docker` (default). `local` is for tests only and has no isolation |
 
+## The app
+
+The Streamlit app follows one journey, shown as three steps at the top of the page:
+
+1. **Describe.** One request box and one button. Six buttons underneath load a ready-made
+   example (web-shop orders, monthly revenue, sensor readings, CRM contacts, course grades)
+   or let you upload your own CSV, JSON or SQLite files. An example is shown as a goal line
+   and bullets; pressing Enter on a bullet starts the next one. Unedited, it is sent to the
+   agents in its original wording. Expected result, table name, quality rules and the
+   spending limit sit behind "More options".
+2. **Build.** One headline says who is working and what they may not do ("The Debugger is
+   fixing clean_orders. It may change the code, never the test."). Under it, the live
+   graph: sources, stages, your approval and the database on one line, with the
+   Orchestrator and the five agents below. The stage and the agent being worked on glow,
+   with moving lines from the Orchestrator; passed stages turn green; the approval gate
+   stays locked.
+3. **Approve.** The evidence (tests passed, quality checks passed, rows set aside), a
+   preview of the staged rows, and two buttons. After approval the gate opens, the database
+   lights up and the first loaded rows are shown.
+
+Everything else (the activity log, each stage's tests and code, the quality checks, cost
+and limits, the written report) is one click away in a closed **Details** section.
+
+| page | what it is for |
+|---|---|
+| Build | the journey above, live |
+| Past runs | pick any recorded run; replay it at 1x to 8x, decide a waiting run, resume a failed one, or rebuild a finished one with no model |
+| About | "How it works" (why several agents, what each may see and do, the five promises and the test behind each) and "Benchmarks" |
+
+Things worth knowing:
+
+* **Two looks.** Night (dark, the default) and Day (light); the button at the top right
+  switches, and the browser remembers the choice. Both come from one stylesheet
+  (`app/theme.py`): each look is a set of named colours, and no rule hard-codes a colour.
+* **A reload never loses a run.** The run on screen is kept in the address bar
+  (`?run=...`), so refreshing, or switching looks, comes back to it.
+* **Live and replay are the same code.** The UI holds no pipeline state. `app/viewmodel.py`
+  turns the run's event log into a `RunView`; live mode passes every event so far, replay
+  passes the first *n*. The booth fallback therefore cannot drift from the real thing.
+* **No internet needed.** Fonts (Geist, Geist Mono) are bundled in `app/static/`.
+
 ## Commands
 
 | command | what it does |
@@ -82,9 +121,9 @@ folder with its VM, so the sandbox could not see files elsewhere.
 | `adpb replay RUN_ID` | print the recorded event stream |
 | `adpb bench [--repeat N]` | run the 8-request benchmark suite (calls the model; costs money) |
 
-A request file looks like `benchmarks/requests/shop_join.yaml`. The app offers five ready-made examples;
-one of them, `course_grades.yaml`, is a class roster and a gradebook export with made-up
-students, for instructors who want to see their own kind of data.
+A request file looks like `benchmarks/requests/shop_join.yaml`. One of the app's examples,
+`course_grades.yaml`, is a class roster and a gradebook export with made-up students, for
+instructors who want to see their own kind of data. It is not part of the benchmark suite.
 
 ## Architecture
 
@@ -107,9 +146,11 @@ students, for instructors who want to see their own kind of data.
 | Debugger | failing code, exact error, earlier attempts | memory search, allow-listed shell | change a test or a schema |
 | Validator | output and source profiles | quality checks in the sandbox | decide pass/fail itself |
 
-UML class and sequence diagrams: [`docs/uml/uml_diagrams.pdf`](docs/uml/uml_diagrams.pdf)
-(sources in `docs/uml/*.mmd`; rebuild with `uv run python scripts/build_uml_html.py`, then
-print `docs/uml/uml.html` to PDF).
+UML diagrams: [`docs/uml/uml_diagrams.pdf`](docs/uml/uml_diagrams.pdf) holds three class
+diagrams (agents, contracts, the front-end) and four sequence diagrams (the main loop,
+building one stage, quality routing and approval, the visitor's journey through the app).
+Sources are in `docs/uml/*.mmd`; rebuild with `uv run python scripts/build_uml_html.py`,
+then print `docs/uml/uml.html` to PDF (17 x 11 inches).
 
 ### Repository layout
 
@@ -125,8 +166,18 @@ src/adpb/
   observability/        event log, budget, pricing, redaction, run report
   tools/                gateway, role allow-lists, source loader, profiler, fingerprint
   runtime.py cli.py config.py benchmark.py workspace.py approval.py
-app/                    Streamlit UI (view model, live graph, theme, pages in app/views)
-benchmarks/             8 request files, fixture generator, results
+app/
+  Home.py               page shell: header, logo, links, the Night/Day switch
+  viewmodel.py          event log -> RunView; headline, journey step, proofs (pure functions)
+  graph.py              the live graph, one SVG drawn from a RunView
+  components.py         draws a run: headline, approval gate, graph, result, Details
+  theme.py              both looks as named colours, and the one stylesheet that uses them
+  prompts.py            shows an example request as bullets, sends the original text
+  runner.py state.py    runs pipelines in background threads, one manager per server
+  how_it_works.py benchmarks.py   the two tabs of the About page
+  views/                build.py, runs.py, about.py (the three pages)
+  static/               bundled fonts
+benchmarks/             8 benchmark requests + a course-grades example, fixture generator, results
 tests/                  unit / integration / e2e / ui
 ```
 
@@ -148,7 +199,7 @@ uv run pytest -m live              # calls the real model (costs money)
 | unit | contracts and plan validation, budgets, redaction, pricing, every quality rule, schema conformance and quarantine, harness, profiler, shell allow-list, model clients against a fake SDK, the agent loop |
 | integration | each MCP server through a real MCP client (official Git server over stdio); the gateway's least-privilege rules; **real Docker isolation** (no network, host invisible, read-only root, non-root, timeout kill, memory cap); 11 whole-pipeline scenarios on the LangGraph graph; reproducible re-run; CLI; benchmark scoring |
 | e2e | one named test per flyer promise; a full run over stdio MCP servers and the Docker sandbox |
-| ui | the view model, the live graph and the headline; Streamlit pages via `AppTest`, including a real approval click that loads the warehouse |
+| ui | the view model, the live graph (including runs that stop early and very long names), the headline; both looks (same colour names, WCAG contrast, no hard-coded colours); example requests shown as bullets but sent unchanged; Streamlit pages via `AppTest`, including a real approval click that loads the warehouse |
 
 ## Requirements traceability
 

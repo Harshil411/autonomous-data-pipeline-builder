@@ -1,0 +1,50 @@
+sequenceDiagram
+    autonumber
+    actor U as Visitor
+    participant B as Build page (Streamlit)
+    participant M as RunManager
+    participant H as RunHandle + Orchestrator (thread)
+    participant L as events.jsonl
+    participant VM as viewmodel
+    participant C as components + graph
+
+    Note over U,B: Step 1 - Describe
+    U->>B: pick an example or type a request, press Build the pipeline
+    B->>B: text_to_send (an unedited example goes out in its original wording)
+    B->>M: start(request, files)
+    M->>H: run() in a background thread
+    B->>B: remember the run in the address bar (?run=...)
+
+    Note over U,C: Step 2 - Build (the page redraws once a second)
+    loop every second while the run is working
+        H->>L: append events (agent calls, test results, stage status)
+        B->>L: EventLog.read
+        B->>VM: build_view(events)
+        VM-->>B: RunView
+        B->>C: run_dashboard(view, live)
+        C->>VM: hero, journey_step, agent_states
+        C-->>U: headline, live graph (lit stage and agent), Details closed
+    end
+
+    Note over U,C: Step 3 - Approve
+    H->>L: approval_requested (rows are staged, nothing is loaded)
+    B->>C: run_dashboard draws the approval gate, proofs and a preview
+    alt the visitor approves
+        U->>B: name, Approve and load
+        B->>M: decide(run_id, approved, by, note)
+        M->>H: decide - promote with a token bound to the staged rows
+        H->>L: approval_decision, load_finished, run_finished
+        C-->>U: gate open, database lit, first rows of the loaded table
+    else the visitor rejects
+        U->>B: Reject
+        B->>M: decide(run_id, rejected, by, note)
+        H->>L: approval_decision, run_finished (rejected)
+        C-->>U: Rejected - nothing was written
+    end
+
+    Note over U,C: Past runs - replay uses the same code on a prefix of the log
+    U->>B: open Past runs, press Replay
+    loop every 0.6 s, n grows by the chosen speed
+        B->>VM: build_view(events[0..n])
+        B->>C: run_dashboard(view, replay)
+    end

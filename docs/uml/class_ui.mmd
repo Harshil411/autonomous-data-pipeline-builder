@@ -1,0 +1,154 @@
+classDiagram
+    direction LR
+
+    class EventLog {
+        <<src/adpb/observability>>
+        +read(path) list~dict~$
+        +emit(kind, fields)
+    }
+
+    class RunView {
+        <<dataclass>>
+        +str run_id
+        +str status
+        +dict sources
+        +dict~str, StageView~ stages
+        +list~Activity~ activity
+        +list quality
+        +dict approval_request
+        +dict approval
+        +dict load
+        +dict cost
+        +str current_stage
+        +bool finished
+        +elapsed() float
+    }
+
+    class StageView {
+        <<dataclass>>
+        +str id
+        +list inputs
+        +str status
+        +int attempt
+        +list tests
+        +list test_runs
+        +list code_versions
+        +int rows_out
+        +int rows_quarantined
+    }
+
+    class Activity {
+        <<dataclass>>
+        +str agent
+        +str text
+        +str tone
+        +str stage
+    }
+
+    class viewmodel {
+        <<module, pure functions>>
+        +build_view(events) RunView
+        +now_line(v) tuple
+        +agent_states(v) dict
+        +hero(v) dict
+        +journey_step(v) int
+        +proofs(v) dict
+        +plain_check(rule_id) str
+    }
+
+    class graph {
+        <<module>>
+        +render_graph(v) str
+    }
+
+    class theme {
+        <<module>>
+        +dict THEMES
+        +css(mode) str
+        +active_mode() str
+    }
+
+    class prompts {
+        <<module>>
+        +as_bullets(text) str
+        +text_to_send(shown, original) str
+    }
+
+    class components {
+        <<module, draws a RunView>>
+        +setup_page()
+        +wordmark() str
+        +favicon() str
+        +look_switch()
+        +journey(step, done)
+        +run_hero(v, live)
+        +approval_gate(v, live, on_decide)
+        +graph(v)
+        +result_preview(v)
+        +details(v, run_root)
+        +run_dashboard(v, run_root, live, on_decide, on_new_request)
+        +bullet_typing()
+    }
+
+    class RunManager {
+        <<one per server process>>
+        +start(request, files) str
+        +decide(run_id, approved, by, note)
+        +resume(run_id)
+        +busy(run_id) bool
+    }
+
+    class RunHandle {
+        <<src/adpb/runtime>>
+        +run() dict
+        +decide(approved, by, note) dict
+        +resume() dict
+    }
+
+    class Home {
+        <<page shell: app/Home.py>>
+        +navigation: Build, Past runs, About
+        +header: logo, links, look switch
+    }
+
+    class BuildPage {
+        <<app/views/build.py>>
+        +new_run_form()
+        +current_run() str
+        +live_view(run_id)
+    }
+
+    class RunsPage {
+        <<app/views/runs.py>>
+        +run_picker(runs) str
+        +actions(runs)
+        +replay(run_id, events)
+        +live(run_id)
+    }
+
+    class AboutPage {
+        <<app/views/about.py>>
+        +tab: How it works
+        +tab: Benchmarks
+    }
+
+    RunView "1" *-- "many" StageView
+    RunView "1" *-- "many" Activity
+    viewmodel ..> EventLog : reads the recorded events
+    viewmodel ..> RunView : builds
+    graph ..> RunView : draws as SVG
+    graph ..> viewmodel : agent_states
+    components ..> viewmodel : hero, journey_step, proofs
+    components ..> graph : render_graph
+    components ..> theme : css(active_mode())
+    Home ..> components : setup_page, look_switch
+    Home --> BuildPage
+    Home --> RunsPage
+    Home --> AboutPage
+    BuildPage ..> prompts : bullets shown, original text sent
+    BuildPage ..> components : run_dashboard (live)
+    RunsPage ..> components : run_dashboard (live or replay)
+    BuildPage --> RunManager : start, decide
+    RunsPage --> RunManager : decide, resume
+    RunManager --> RunHandle : runs in a background thread
+    RunHandle ..> EventLog : appends events

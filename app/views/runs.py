@@ -91,14 +91,16 @@ def live(run_id: str) -> None:
 def actions(runs: list[dict]) -> tuple[str, list[dict], object]:
     """The control row: which run, replay and its speed, resume, rebuild with no model.
     Returns the chosen run, its events and its view."""
-    c0, c1, c2, c3, c4 = st.columns([2.5, 1.1, 1.5, 1.5, 1.3], vertical_alignment="bottom")
+    # Labels are one or two words so the row fits a narrow window; tooltips say the rest.
+    c0, c1, c2, c3, c4 = st.columns([2.3, 0.9, 1.9, 0.9, 1.5], vertical_alignment="bottom")
     with c0:
         run_id = run_picker(runs)
     root = settings.runs_dir / run_id
     events = EventLog.read(root / "events.jsonl")
     view = build_view(events)
     replaying = st.session_state.get("replaying") == run_id
-    if c1.button("Stop replay" if replaying else "Replay this run", width="stretch"):
+    if c1.button("Stop" if replaying else "Replay", width="stretch",
+                 help="Play this run's recording from the start: no model calls, no cost."):
         if replaying:
             st.session_state.pop("replaying")
         else:
@@ -106,14 +108,15 @@ def actions(runs: list[dict]) -> tuple[str, list[dict], object]:
             st.session_state["replaying"] = run_id
         st.rerun()
     st.session_state["replay-speed"] = c2.segmented_control(
-        "Replay speed", [1, 2, 4, 8], default=st.session_state.get("replay-speed", 4),
+        "Speed", [1, 2, 4, 8], default=st.session_state.get("replay-speed", 4),
         format_func=lambda x: f"{x}x", key="speed") or 4
     # Offered only when it can do something: a run that failed or hit its budget.
     if view.status in ("failed", "budget_exceeded") and c3.button(
-            "Resume from the failed stage", width="stretch"):
+            "Resume", width="stretch",
+            help="Continue from the stage that failed, keeping the stages that passed."):
         manager().resume(run_id)
         st.rerun()
-    if c4.button("Rebuild with no model", width="stretch",
+    if c4.button("Rebuild, no model", width="stretch",
                  disabled=not (root / "pipeline" / "manifest.json").exists(),
                  help="Rebuilds every stage from the sources with the code committed to git "
                       "and checks the result is identical."):

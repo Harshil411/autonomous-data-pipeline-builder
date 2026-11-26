@@ -25,6 +25,12 @@ DIAGRAMS = [
      "Three attempts per stage with the Debugger in between, then one replan, then a clean stop."),
     ("seq_quality_and_approval.mmd", "Sequence diagram 3 - quality routing and the approval gate",
      "Failed checks go back to the stage that produced the data; production needs a human token."),
+    ("class_ui.mmd", "Class diagram 3 - the Streamlit front-end",
+     "The UI holds no pipeline state. A pure view model turns the event log into a RunView; "
+     "components and the live graph only draw it. The same code serves a live run and a replay."),
+    ("seq_ui_journey.mmd", "Sequence diagram 4 - the visitor's journey: Describe, Build, Approve",
+     "The page starts a run in a background thread, then redraws from the event log once a "
+     "second. Only a person's click reaches RunManager.decide."),
 ]
 
 PAGE = """<!doctype html>
@@ -56,7 +62,7 @@ PAGE = """<!doctype html>
 
 TITLE = ("<h1>Autonomous Data Pipeline Builder - UML</h1><p>ADS 5984 Agentic AI in Practice, "
          "Virginia Tech. Team: Harshil Agrawal, Siddharth Pal, Vasu Patel. Diagrams are drawn "
-         "from the classes and methods in <code>src/adpb</code>.</p>")
+         "from the classes and methods in <code>src/adpb</code> and <code>app</code>.</p>")
 
 
 def main() -> None:

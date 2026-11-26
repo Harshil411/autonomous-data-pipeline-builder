@@ -456,6 +456,10 @@ def details(v: RunView, run_root: Path) -> None:
     with st.expander("Details"):
         happened, checks, cost = st.tabs(["What happened", "Checks", "Cost"])
         with happened:
+            if v.error and v.status in ("failed", "budget_exceeded"):
+                # the raw error, for whoever wants it; the headline says it in plain words
+                html('<div class="panel-title">Technical reason it stopped</div>')
+                st.code(v.error, language=None, wrap_lines=True)
             full = st.toggle(f"Show all {len(v.activity)} steps", key=f"log-{v.run_id}")
             activity_rows(v, limit=500 if full else 8)
             report_panel(run_root)
@@ -487,11 +491,7 @@ def run_dashboard(v: RunView, run_root: Path, live: bool, on_decide=None,
     run_hero(v, live)
     approval_gate(v, live, on_decide, replay_note)
     graph(v)
-    if v.error and v.status in ("failed", "budget_exceeded"):
-        st.error(v.error)
     result_preview(v)
     details(v, run_root)
 
 
-def read_json(path: Path) -> dict:
-    return json.loads(path.read_text()) if path.exists() else {}

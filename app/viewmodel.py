@@ -8,7 +8,6 @@ the model or the database.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
 ACTIVE = {"coding", "testing", "debugging"}
 AGENT_NAMES = {"planner": "Planner", "coder": "Stage Coder", "tester": "Tester",
@@ -249,14 +248,6 @@ def agent_label(agent: str) -> str:
     return AGENT_NAMES.get(agent, agent.title())
 
 
-def summary_numbers(v: RunView) -> dict[str, Any]:
-    passed = sum(1 for s in v.stages.values() if s.status == "passed")
-    retries = sum(max(0, s.attempt - 1) for s in v.stages.values())
-    return {"stages": f"{passed}/{len(v.stages)}", "retries": retries,
-            "cost": f"${v.cost['usd']:.3f}", "tokens": f"{v.cost['tokens']:,}",
-            "calls": v.cost["calls"], "elapsed": f"{v.elapsed:.0f}s"}
-
-
 # -- what a visitor reads from across the table ---------------------------------------------
 
 LANE = ("planner", "tester", "coder", "debugger", "validator")
@@ -326,6 +317,22 @@ _LIMITS = {
 }
 
 
+# The step a failed run was in, read from the first word of its error ("validate: ...").
+_PHASES = {"prepare": "reading the sources", "plan": "planning the stages",
+           "validate": "checking data quality", "load": "loading the result"}
+
+
+def _why_it_stopped(v: RunView) -> str:
+    """One plain sentence for a failed run. The raw error (often a stack of exception names)
+    is kept for the Details section; a visitor only needs to know where it stopped."""
+    stuck = next((s for s in v.stages.values() if s.status == "failed"), None)
+    if stuck is not None:
+        tries = f"{stuck.attempt} tries" if stuck.attempt != 1 else "1 try"
+        return f"{stuck.id} still failed its tests after {tries}."
+    phase = _PHASES.get((v.error or "").split(":", 1)[0].strip())
+    return f"It stopped while {phase}." if phase else "It stopped before the result was ready."
+
+
 def hero(v: RunView) -> dict[str, str]:
     """The top of the run screen: a tone (live, wait, done, stopped, idle), a short status
     pill, one headline and one supporting line. Built on `now_line`, so the headline and the
@@ -361,7 +368,7 @@ def hero(v: RunView) -> dict[str, str]:
     if v.status == "failed":
         return {"tone": "stopped", "pill": "Stopped",
                 "headline": "Stopped without loading anything",
-                "sub": (v.error or "See the activity log for the reason.")[:220]}
+                "sub": f"{_why_it_stopped(v)} The technical reason is under Details."}
     if v.status == "not started":
         return {"tone": "idle", "pill": "Not started", "headline": "Not started", "sub": ""}
 

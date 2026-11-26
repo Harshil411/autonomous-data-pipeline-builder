@@ -6,7 +6,6 @@ stage only, the tester rejects invalid expressions, the debugger can only return
 and the validator keeps only rules that refer to real datasets and columns.
 """
 
-from pathlib import Path
 
 import pytest
 
@@ -204,12 +203,12 @@ class TestRoles:
         assert "clean_orders.ghost.range" not in ids and "nowhere.*.row_count" not in ids
         assert {r.origin for r in rules} == {"schema", "derived"}
 
-    def test_foreign_keys_must_reference_an_upstream_dataset(self):
+    def test_foreign_keys_must_reference_an_upstream_dataset(self, tmp_path):
         # Found in a live run: a key rule on clean_orders -> clean_customers can never be
         # fixed by clean_orders, which never sees the customers.
         from tests.integration.pipeline_fixtures import PLAN
         from tests.integration.pipeline_fixtures import request as req
-        plan = Planner(ctx({"planner": [PLAN]}, Path("."))).plan(req(), {
+        plan = Planner(ctx({"planner": [PLAN]}, tmp_path)).plan(req(), {
             "raw.customers": PROFILE["raw.orders"], "raw.orders": PROFILE["raw.orders"]})
         on_join = QualityRule(kind=RuleKind.FOREIGN_KEY, dataset="customer_orders",
                               column="customer_id", ref_dataset="clean_customers",
