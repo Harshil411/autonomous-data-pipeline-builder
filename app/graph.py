@@ -31,6 +31,8 @@ GATE_W, GATE_H, DB_W = 136, 104, 184
 BAR_H, AGENT_H, AGENT_GAP = 54, 66, 20
 RISE = 62   # vertical room between the data's path and the Orchestrator bar
 DROP = 46   # vertical room between the Orchestrator bar and the agents
+AGENT_MIN_W = 180  # an agent card is never narrower than this, so its two lines of text fit
+PLAN = "__plan__"  # placeholder node shown until the Planner has proposed the stages
 
 # 24x24 stroke icons, one per agent (drawn here so the app needs no icon font or network).
 ICONS = {
@@ -124,13 +126,20 @@ def render_graph(v: RunView) -> str:
         columns[col].sort(key=centre)
         row_of.update({n: i for i, n in enumerate(columns[col])})
 
+    planning = not v.stages  # the first seconds: sources are read, the plan is not written
+    if planning:
+        columns[1] = [PLAN]  # hold the stages' place, so the picture does not jump later
     last_col = max(columns, default=0)
     rows = max(len(c) for c in columns.values())
     flow_h = max(rows * H + (rows - 1) * GY, GATE_H)
     top = PAD + 8
-    gate_x = PAD + (last_col + 1) * (W + GX)
+    # The picture is at least wide enough for five readable agent cards. A short pipeline
+    # (or one with no stages yet) is centred in that width instead of shrinking the cards.
+    natural = PAD + (last_col + 1) * (W + GX) + GATE_W + GX + DB_W + PAD
+    width = max(natural, 2 * PAD + 5 * AGENT_MIN_W + 4 * AGENT_GAP)
+    left = PAD + (width - natural) / 2  # x of the first column
+    gate_x = left + (last_col + 1) * (W + GX)
     db_x = gate_x + GATE_W + GX
-    width = db_x + DB_W + PAD
     mid_y = top + flow_h / 2
     bar_y = top + flow_h + RISE
     agents_y = bar_y + BAR_H + DROP
@@ -141,7 +150,7 @@ def render_graph(v: RunView) -> str:
     for col, names in columns.items():
         offset = (flow_h - (len(names) * H + (len(names) - 1) * GY)) / 2
         for i, name in enumerate(names):
-            pos[name] = (PAD + col * (W + GX), top + offset + i * (H + GY))
+            pos[name] = (left + col * (W + GX), top + offset + i * (H + GY))
 
     loaded = bool(v.load)
     rejected = bool(v.approval and not v.approval.get("approved"))
@@ -187,6 +196,12 @@ def render_graph(v: RunView) -> str:
             cls = ("live" if live_stage is not None and s.id == live_stage.id else
                    "done" if upstream_done and s.status == "passed" else "")
             edge(x1 + W, y1 + H / 2, x2, y2 + H / 2, cls)
+    if planning:
+        px, py = pos[PLAN]
+        for name in v.sources:
+            x, y = pos[name]
+            edge(x + W, y + H / 2, px, py + H / 2, "")
+        edge(px + W, py + H / 2, gate_x, mid_y, "")
     finals = [s for s in v.stages.values()
               if not any(s.id in other.inputs for other in v.stages.values())]
     for s in finals:
@@ -227,6 +242,9 @@ def render_graph(v: RunView) -> str:
     for name, info in v.sources.items():
         x, y = pos[name]
         node("source", x, y, W, H, name, f"{info['rows']:,} rows")
+    if planning:
+        x, y = pos[PLAN]
+        node("stage pending", x, y, W, H, "Stages", "Being planned")
     for s in v.stages.values():
         x, y = pos[s.id]
         state = ("live" if s.status in ACTIVE else s.status

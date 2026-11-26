@@ -131,3 +131,31 @@ def test_hero_at_the_gate_does_not_hide_a_failed_quality_check(recorded):
     h = hero(build_view(events))
     assert h["headline"] == "4 rows are staged, but 1 quality check failed"
     assert "Read the failed check" in h["sub"]
+
+
+# -- the first seconds of a run, before the Planner has proposed any stage -------------------
+
+
+def _before_the_plan(recorded):
+    last_source = max(i for i, e in enumerate(recorded) if e["kind"] == "source_loaded")
+    return build_view(recorded[: last_source + 1])
+
+
+def test_agent_cards_keep_room_for_their_text_before_the_plan_exists(recorded):
+    # With only the sources known the picture used to shrink, and "waiting its turn" ran
+    # out of its card into the next one.
+    import re
+    svg = render_graph(_before_the_plan(recorded))
+    cards = re.findall(r'<g class="agent [a-z]+"[^>]*>.*?<rect class="box" width="(\d+)"', svg)
+    assert len(cards) == 5 and min(int(w) for w in cards) >= 176
+    # cards must not overlap: each starts after the previous one ends
+    starts = [int(x) for x in re.findall(r'<g class="agent [a-z]+" transform="translate\((\d+),',
+                                         svg)]
+    assert all(b - a >= int(cards[0]) for a, b in zip(starts, starts[1:], strict=False))
+
+
+def test_graph_shows_where_the_stages_will_go_while_the_planner_works(recorded):
+    svg = render_graph(_before_the_plan(recorded))
+    assert "Being planned" in svg                    # a placeholder, not an empty gap
+    assert 'class="node gate locked"' in svg
+    assert svg.count('class="agent live"') == 1      # the Planner
