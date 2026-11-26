@@ -186,3 +186,13 @@ def test_a_failed_check_is_said_in_plain_words():
     # an unknown kind still reads as a sentence, and nothing is lost
     assert plain_check("t.amount.some_new_rule") == "some new rule check on amount in t"
     assert plain_check("not-a-rule-id") == "not-a-rule-id"
+
+
+def test_an_agent_that_was_never_needed_is_not_left_waiting_when_the_run_is_over(recorded):
+    # A run in which the Debugger never had to step in: once the run has finished, its card
+    # should not still say it is waiting for a turn that will never come.
+    events = [e for e in recorded if e.get("agent") != "debugger"]
+    svg = render_graph(build_view(events))
+    assert "not needed" in svg and "waiting its turn" not in svg
+    # while the run is still going, a resting agent is waiting
+    assert "waiting its turn" in render_graph(_debugging(recorded))

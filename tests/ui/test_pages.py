@@ -164,3 +164,16 @@ def test_own_files_form_does_not_ask_about_databases_up_front(home):
     at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30).run()
     next(b for b in at.button if b.key == "preset-custom").click().run()
     assert not any("SQLite" in t.label for t in at.text_input)
+
+
+def test_describe_screen_carries_the_bullet_onto_a_new_line(home):
+    # Pressing Enter at the end of a bullet starts the next one. That lives in the browser,
+    # so here we only check the page ships the script, scoped to the request box.
+    at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30).run()
+    scripts = [h.proto.body for h in at.get("html")]
+    body = next(b for b in scripts if "keydown" in b)
+    assert ".st-key-prompt" in body
+    # the script must reach the browser with its escapes intact: a real line break inside
+    # a JavaScript string is a syntax error and the whole script silently does nothing
+    assert r'"\n" + BULLET' in body and 'var BULLET = "' + chr(0x2022) + ' "' in body
+    assert not any(line.count('"') % 2 for line in body.splitlines() if "//" not in line)

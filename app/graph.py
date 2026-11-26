@@ -94,7 +94,9 @@ def _agent_words(v: RunView, agent: str, state: str) -> str:
     calls = v.cost["by_agent"].get(agent, {}).get("calls", 0)
     if state == "done":  # plain words here; tokens and cost per agent are under Details
         return {1: "worked once", 2: "worked twice"}.get(calls, f"worked {calls} times")
-    return "waiting its turn"
+    # idle: still to come while the run is going, simply not needed once nothing is left to do
+    over = v.finished or v.status == "awaiting_approval"
+    return "not needed" if over else "waiting its turn"
 
 
 def _orchestrator_words(v: RunView) -> str:

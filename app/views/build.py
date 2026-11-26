@@ -14,7 +14,7 @@ from adpb.config import REPO_ROOT, load_settings
 from adpb.contracts import BudgetLimits, DataRequest, SourceKind, SourceSpec
 from adpb.observability.events import EventLog
 from adpb.requests_io import load_request_file
-from app.components import html, journey, run_dashboard
+from app.components import bullet_typing, html, journey, run_dashboard
 from app.prompts import as_bullets, text_to_send
 from app.state import manager
 from app.viewmodel import build_view
@@ -113,6 +113,7 @@ def new_run_form() -> None:
                                step=0.05)
         _, c4 = st.columns([2.2, 1])
         go = c4.form_submit_button("Build the pipeline", type="primary", width="stretch")
+    bullet_typing()
     html('<div class="promises">'
          '<div><b>Tests come first.</b> Checks are written before any code exists.</div>'
          '<div><b>Sealed sandbox.</b> Generated code runs with no network.</div>'

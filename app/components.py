@@ -130,6 +130,44 @@ def wordmark() -> str:
     return f'<span class="wordmark">{LOGO}Pipeline Builder</span>'
 
 
+# A raw string: the backslash-n below is a JavaScript escape and must reach the browser as
+# written. (Unescaped, a line break lands inside a JS string and the script cannot run.)
+_BULLET_JS = r"""<script>
+(function () {
+  // In the request box, Enter at the end of a bullet starts the next bullet, and Enter on
+  // an empty bullet removes it (so two Enters end the list) - as in any notes app.
+  // One listener on the document, so it keeps working when Streamlit redraws the box.
+  var doc = window.top.document;
+  if (doc.adpbBullets) return;
+  doc.adpbBullets = true;
+  var BULLET = "• ";
+  doc.addEventListener("keydown", function (ev) {
+    var box = ev.target;
+    if (ev.key !== "Enter" || ev.shiftKey || ev.metaKey || ev.ctrlKey || ev.isComposing) return;
+    if (!box || box.tagName !== "TEXTAREA" || !box.closest(".st-key-prompt")) return;
+    var text = box.value, at = box.selectionStart, end = box.selectionEnd;
+    var lineStart = text.lastIndexOf("\n", at - 1) + 1;
+    var line = text.slice(lineStart, at);
+    if (line.indexOf(BULLET) !== 0) return;          // not on a bullet: a normal new line
+    ev.preventDefault();
+    var from = at, insert = "\n" + BULLET;
+    if (line.trim() === BULLET.trim()) { from = lineStart; insert = ""; }  // empty bullet
+    var next = text.slice(0, from) + insert + text.slice(end);
+    // Set the value the way a keystroke would, so Streamlit records the change.
+    var proto = box.ownerDocument.defaultView.HTMLTextAreaElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, "value").set.call(box, next);
+    box.selectionStart = box.selectionEnd = from + insert.length;
+    box.dispatchEvent(new Event("input", { bubbles: true }));
+  }, true);
+})();
+</script>"""
+
+
+def bullet_typing() -> None:
+    """Make the request box continue a bulleted list when the visitor presses Enter."""
+    st.html(_BULLET_JS, unsafe_allow_javascript=True)
+
+
 def page_title(title: str, subtitle: str = "") -> None:
     """The heading of a page that is not a run: one sentence, one supporting line."""
     sub = f"<p>{escape(subtitle)}</p>" if subtitle else ""
