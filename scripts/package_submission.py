@@ -46,6 +46,10 @@ def main() -> int:
     if not (ROOT / "docs" / "uml" / "uml_diagrams.pdf").exists():
         print("docs/uml/uml_diagrams.pdf is missing; render the UML first (see README).")
         return 1
+    # The README's setup step copies .env.example; a zip without it cannot be set up.
+    if ROOT / ".env.example" not in files:
+        print(".env.example is missing or not tracked by git; restore it before packaging.")
+        return 1
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
     target = dist / f"autonomous-data-pipeline-builder-{date.today():%Y%m%d}.zip"
