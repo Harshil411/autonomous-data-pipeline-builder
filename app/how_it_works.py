@@ -18,17 +18,17 @@ digraph G {{
   rankdir=LR; bgcolor="transparent"; nodesep=0.35; ranksep=0.55;
   node [shape=box, style="rounded,filled", fillcolor="{t['surface']}", color="{t['line-3']}",
         fontcolor="{t['text']}", fontname="Helvetica", fontsize=12, margin="0.18,0.08"];
-  edge [color="{t['faint']}", fontcolor="{t['muted']}", fontname="Helvetica", fontsize=10];
+  edge [color="{t['faint']}", fontcolor="{t['text-2']}", fontname="Helvetica", fontsize=10];
   you [label="You\\n(request, approval)", fillcolor="{t['gate-2']}",
        color="{t['maroon-line']}", fontcolor="{t['gate-text']}"];
   orch [label="Orchestrator\\nplain code, no LLM\\norder, retries, budget",
         color="{t['text']}", penwidth=2];
   subgraph cluster_agents {{ label="LLM agents (Claude)"; color="{t['line-2']}";
-    fontcolor="{t['muted']}"; fontname="Helvetica";
+    fontcolor="{t['text-2']}"; fontname="Helvetica";
     planner [label="Planner"]; coder [label="Stage Coder"]; tester [label="Tester"];
     debugger [label="Debugger"]; validator [label="Validator"]; }}
   subgraph cluster_mcp {{ label="MCP servers (the only way to reach a tool)";
-    color="{t['line-2']}"; fontcolor="{t['muted']}"; fontname="Helvetica";
+    color="{t['line-2']}"; fontcolor="{t['text-2']}"; fontname="Helvetica";
     sandbox [label="sandbox\\nDocker, no network"]; memory [label="memory\\nChromaDB"];
     artifacts [label="artifacts\\nversioned files"]; git [label="git\\nmcp-server-git"];
     warehouse [label="warehouse\\nSQLite, staging + gate"]; }}

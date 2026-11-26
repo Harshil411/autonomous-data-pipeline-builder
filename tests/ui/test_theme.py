@@ -81,3 +81,12 @@ def test_tab_icon_is_the_logo_drawn_to_stand_alone():
     assert f'd="{shape}"' in icon
     assert "var(--" not in icon and "class=" not in icon
     assert len(HEX.findall(icon)) >= 2  # the maroon-to-orange accent, written out
+
+
+def test_live_graph_styles_cannot_leak_onto_the_architecture_diagram():
+    # Graphviz, which draws the diagram on the About page, also names its groups "graph",
+    # "node" and "edge". Our live-graph rules must therefore start at our own <svg
+    # class="graph"> element, or they outline that diagram's labels and thicken its arrows.
+    rules = css("dark").split("/* ---- page", 1)[1]
+    selectors = re.findall(r"(?<![\w-])(\S*)\.graph\b", rules)
+    assert selectors and all(prefix.endswith("svg") for prefix in selectors)

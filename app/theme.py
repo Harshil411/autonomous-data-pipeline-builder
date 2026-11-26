@@ -259,76 +259,78 @@ button:focus-visible { outline: 2px solid var(--orange) !important; outline-offs
 .peek b { font-family: 'Geist Mono', ui-monospace, Menlo, monospace; font-weight: 500; }
 .peek span { color: var(--muted); font-size: .9rem; }
 
+/* Every rule starts at svg.graph - our own element - because Graphviz (the diagram on
+   the About page) also uses the class names graph, node and edge. */
 /* ---- the live graph (markup in app/graph.py) ---------------------------------------- */
-.graph-wrap { margin: .2rem 0 1.2rem; }
-.graph { display: block; margin: 0 auto; overflow: visible; }
-@media (max-width: 820px) { .graph-wrap { overflow-x: auto; } .graph { min-width: 760px; } }
-.graph text { font-family: inherit; fill: var(--text); }
-.graph .title { font-size: 15px; font-weight: 600; }
-.graph .title.mono { font-family: 'Geist Mono', ui-monospace, Menlo, monospace;
+svg.graph-wrap { margin: .2rem 0 1.2rem; }
+svg.graph { display: block; margin: 0 auto; overflow: visible; }
+@media (max-width: 820px) { svg.graph-wrap { overflow-x: auto; } svg.graph { min-width: 760px; } }
+svg.graph text { font-family: inherit; fill: var(--text); }
+svg.graph .title { font-size: 15px; font-weight: 600; }
+svg.graph .title.mono { font-family: 'Geist Mono', ui-monospace, Menlo, monospace;
   font-size: 14px; font-weight: 500; }
-.graph .sub { font-size: 14px; fill: var(--muted); }
-.graph .note { font-size: 12.5px; fill: var(--muted); }
-.graph .box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.2; transition: fill .4s, stroke .4s; }
-.graph .halo { fill: none; stroke: none; }
+svg.graph .sub { font-size: 14px; fill: var(--muted); }
+svg.graph .note { font-size: 12.5px; fill: var(--muted); }
+svg.graph .box { fill: var(--surface); stroke: var(--line-2); stroke-width: 1.2; transition: fill .4s, stroke .4s; }
+svg.graph .halo { fill: none; stroke: none; }
 /* the soft light behind what matters: its colour and strength come from the mode */
-.graph .glow { opacity: var(--glow); }
-.graph stop.s-live { stop-color: var(--orange); } .graph stop.s-gate { stop-color: var(--grad-1); }
-.graph stop.s-done { stop-color: var(--green); }
-.graph stop.s-gate-1 { stop-color: var(--gate-1); } .graph stop.s-gate-2 { stop-color: var(--gate-2); }
-.graph stop.in { stop-opacity: .34; } .graph stop.out { stop-opacity: 0; }
-.graph .edge, .graph .beam, .graph .tether { fill: none; stroke-width: 2; stroke-linecap: round; }
-.graph .edge { stroke: var(--line-3); transition: stroke .4s; }
-.graph .edge.blocked { stroke-dasharray: 6 7; }
-.graph .edge.done { stroke: var(--green); filter: drop-shadow(0 0 5px rgba(var(--green-rgb), var(--halo))); }
-.graph .edge.flow { stroke: var(--green); stroke-dasharray: 6 7;
+svg.graph .glow { opacity: var(--glow); }
+svg.graph stop.s-live { stop-color: var(--orange); } svg.graph stop.s-gate { stop-color: var(--grad-1); }
+svg.graph stop.s-done { stop-color: var(--green); }
+svg.graph stop.s-gate-1 { stop-color: var(--gate-1); } svg.graph stop.s-gate-2 { stop-color: var(--gate-2); }
+svg.graph stop.in { stop-opacity: .34; } svg.graph stop.out { stop-opacity: 0; }
+svg.graph .edge, svg.graph .beam, svg.graph .tether { fill: none; stroke-width: 2; stroke-linecap: round; }
+svg.graph .edge { stroke: var(--line-3); transition: stroke .4s; }
+svg.graph .edge.blocked { stroke-dasharray: 6 7; }
+svg.graph .edge.done { stroke: var(--green); filter: drop-shadow(0 0 5px rgba(var(--green-rgb), var(--halo))); }
+svg.graph .edge.flow { stroke: var(--green); stroke-dasharray: 6 7;
   filter: drop-shadow(0 0 6px rgba(var(--green-rgb), var(--halo))); animation: g-flow .9s linear infinite; }
-.graph .edge.live, .graph .beam { stroke: var(--orange); stroke-dasharray: 6 7;
+svg.graph .edge.live, svg.graph .beam { stroke: var(--orange); stroke-dasharray: 6 7;
   filter: drop-shadow(0 0 6px rgba(var(--orange-rgb), var(--halo))); animation: g-flow .9s linear infinite; }
-.graph .tether { stroke: var(--line-3); stroke-dasharray: 3 7; }
-.graph .node.source .title { font-weight: 600; }
-.graph .stage.passed .box { fill: var(--green-soft); stroke: var(--green);
+svg.graph .tether { stroke: var(--line-3); stroke-dasharray: 3 7; }
+svg.graph .node.source .title { font-weight: 600; }
+svg.graph .stage.passed .box { fill: var(--green-soft); stroke: var(--green);
   filter: drop-shadow(0 0 10px rgba(var(--green-rgb), calc(var(--halo) * .25))); }
-.graph .stage.passed .sub { fill: var(--green); }
-.graph .stage.live .box { fill: var(--orange-soft); stroke: var(--orange); stroke-width: 2; }
-.graph .stage.live .sub { fill: var(--orange-text); }
-.graph .stage.failed .box { fill: var(--red-soft); stroke: var(--red); }
-.graph .stage.failed .sub { fill: var(--red-text); }
-.graph .stage.pending .box, .graph .db.empty .box, .graph .agent.idle .box {
+svg.graph .stage.passed .sub { fill: var(--green); }
+svg.graph .stage.live .box { fill: var(--orange-soft); stroke: var(--orange); stroke-width: 2; }
+svg.graph .stage.live .sub { fill: var(--orange-text); }
+svg.graph .stage.failed .box { fill: var(--red-soft); stroke: var(--red); }
+svg.graph .stage.failed .sub { fill: var(--red-text); }
+svg.graph .stage.pending .box, svg.graph .db.empty .box, svg.graph .agent.idle .box {
   fill: rgba(var(--surface-rgb), .6); stroke: var(--line-3); stroke-dasharray: 5 5; }
-.graph .stage.pending .title, .graph .agent.idle .title { fill: var(--muted); }
-.graph .gate .box { fill: url(#gate-fill); stroke: var(--maroon-line); }
-.graph .gate .title { fill: var(--gate-text); }
-.graph .gate .sub { fill: var(--gate-sub); font-size: 13px; }
-.graph .gate.open .title, .graph .gate.rejected .title { fill: var(--text); }
-.graph .gate.rejected .sub { fill: var(--red-text); }
-.graph .gate.open .box { fill: var(--green-soft); stroke: var(--green); }
-.graph .gate.open .sub { fill: var(--green); }
-.graph .gate.rejected .box { fill: var(--red-soft); stroke: var(--red); }
-.graph .db.loaded .box { fill: var(--green-soft-2); stroke: var(--green); stroke-width: 2; }
-.graph .db.loaded .sub { fill: var(--green-text); }
-.graph .orch .box { fill: var(--orch-bg); stroke: var(--orch-line); }
-.graph .orch .title { fill: var(--orch-text); } .graph .orch .sub { fill: var(--orch-sub); }
-.graph .agent .icon { fill: none; stroke: var(--text-2); stroke-width: 1.7; stroke-linecap: round;
+svg.graph .stage.pending .title, svg.graph .agent.idle .title { fill: var(--muted); }
+svg.graph .gate .box { fill: url(#gate-fill); stroke: var(--maroon-line); }
+svg.graph .gate .title { fill: var(--gate-text); }
+svg.graph .gate .sub { fill: var(--gate-sub); font-size: 13px; }
+svg.graph .gate.open .title, svg.graph .gate.rejected .title { fill: var(--text); }
+svg.graph .gate.rejected .sub { fill: var(--red-text); }
+svg.graph .gate.open .box { fill: var(--green-soft); stroke: var(--green); }
+svg.graph .gate.open .sub { fill: var(--green); }
+svg.graph .gate.rejected .box { fill: var(--red-soft); stroke: var(--red); }
+svg.graph .db.loaded .box { fill: var(--green-soft-2); stroke: var(--green); stroke-width: 2; }
+svg.graph .db.loaded .sub { fill: var(--green-text); }
+svg.graph .orch .box { fill: var(--orch-bg); stroke: var(--orch-line); }
+svg.graph .orch .title { fill: var(--orch-text); } svg.graph .orch .sub { fill: var(--orch-sub); }
+svg.graph .agent .icon { fill: none; stroke: var(--text-2); stroke-width: 1.7; stroke-linecap: round;
   stroke-linejoin: round; }
-.graph .agent .sub { font-size: 13px; }
-.graph .agent.done .sub { fill: var(--green); }
-.graph .agent.live .box { fill: var(--orange-soft); stroke: var(--orange); stroke-width: 2; }
-.graph .agent.live .title, .graph .agent.live .sub { fill: var(--orange-text); }
-.graph .agent.live .icon { stroke: var(--orange-text); }
-.graph .agent.idle .icon { stroke: var(--faint); }
+svg.graph .agent .sub { font-size: 13px; }
+svg.graph .agent.done .sub { fill: var(--green); }
+svg.graph .agent.live .box { fill: var(--orange-soft); stroke: var(--orange); stroke-width: 2; }
+svg.graph .agent.live .title, svg.graph .agent.live .sub { fill: var(--orange-text); }
+svg.graph .agent.live .icon { stroke: var(--orange-text); }
+svg.graph .agent.idle .icon { stroke: var(--faint); }
 /* the pulsing halo: only on the live stage, the live agent, a gate that needs a person,
    and the database at the moment it fills */
-.graph .stage.live .halo, .graph .agent.live .halo { stroke: var(--orange); }
-.graph .gate.needed .halo { stroke: var(--maroon-line); }
-.graph .db.loaded .halo { stroke: var(--green); }
-.graph .stage.live .halo, .graph .agent.live .halo, .graph .gate.needed .halo,
-.graph .db.loaded .halo { stroke-width: 7; filter: blur(5px);
+svg.graph .stage.live .halo, svg.graph .agent.live .halo { stroke: var(--orange); }
+svg.graph .gate.needed .halo { stroke: var(--maroon-line); }
+svg.graph .db.loaded .halo { stroke: var(--green); }
+svg.graph .stage.live .halo, svg.graph .agent.live .halo, svg.graph .gate.needed .halo,
+svg.graph .db.loaded .halo { stroke-width: 7; filter: blur(5px);
   animation: g-pulse 1.8s ease-in-out infinite; }
 @keyframes g-flow { to { stroke-dashoffset: -26; } }
 @keyframes g-pulse { 0%, 100% { opacity: .22; } 50% { opacity: .8; } }
 @media (prefers-reduced-motion: reduce) {
-  .graph .edge, .graph .beam, .graph .halo, .hero .tag i { animation: none !important; } }
+  svg.graph .edge, svg.graph .beam, svg.graph .halo, .hero .tag i { animation: none !important; } }
 
 /* ---- details under the graph ------------------------------------------------------- */
 .panel-title { font-weight: 600; font-size: 1.05rem; color: var(--text); margin: .1rem 0 .5rem; }
