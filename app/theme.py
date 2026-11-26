@@ -187,9 +187,9 @@ code, pre { font-family: 'Geist Mono', ui-monospace, Menlo, monospace !important
 
 /* ---- the Describe screen ------------------------------------------------------------- */
 .describe { position: relative; isolation: isolate; text-align: center;
-  margin: 2.2rem auto 1.8rem; }
+  margin: 1.2rem auto 1.5rem; }
 .describe h1 { margin: 0 auto; padding: 0; max-width: 58rem;
-  font-size: clamp(2.3rem, 5vw, 4.4rem); line-height: 1.02; font-weight: 600;
+  font-size: clamp(2.1rem, 3.9vw, 3.5rem); line-height: 1.04; font-weight: 600;
   letter-spacing: -0.04em; text-wrap: balance; }
 .describe h1 .dim { color: var(--dim); }
 .describe::after { content: ""; position: absolute; left: 50%; top: 55%; width: min(1100px, 92vw);
@@ -200,7 +200,7 @@ code, pre { font-family: 'Geist Mono', ui-monospace, Menlo, monospace !important
   border: 1px solid var(--line-2); border-radius: 18px; padding: 1.2rem 1.3rem 1rem;
   box-shadow: 0 30px 80px var(--shadow); }
 .st-key-prompt [data-testid="stTextArea"] textarea { background: transparent; border: 0;
-  font-size: 1.22rem; line-height: 1.45; padding: .2rem; }
+  font-size: 1.12rem; line-height: 1.5; padding: .2rem; }
 .st-key-prompt [data-testid="stTextArea"] > div, .st-key-prompt [data-baseweb="textarea"] {
   background: transparent !important; border-color: transparent !important; }
 .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: .1rem 0 .4rem; }

@@ -15,6 +15,7 @@ from adpb.contracts import BudgetLimits, DataRequest, SourceKind, SourceSpec
 from adpb.observability.events import EventLog
 from adpb.requests_io import load_request_file
 from app.components import html, journey, run_dashboard
+from app.prompts import as_bullets, text_to_send
 from app.state import manager
 from app.viewmodel import build_view
 
@@ -38,6 +39,12 @@ KINDS = {".csv": SourceKind.CSV, ".json": SourceKind.JSON, ".jsonl": SourceKind.
 def _source_name(filename: str) -> str:
     name = re.sub(r"[^a-z0-9]+", "_", Path(filename).stem.lower()).strip("_") or "source"
     return name if name[0].isalpha() else f"s_{name}"
+
+
+def _rows(text: str, per_line: int = 74) -> int:
+    """How many lines the text takes in the request box (about 74 characters fit a line),
+    so the box is as tall as its text and no taller."""
+    return sum(max(1, -(-len(line) // per_line)) for line in text.splitlines() or [""])
 
 
 def preset_cards() -> str:
@@ -78,9 +85,12 @@ def new_run_form() -> None:
     has_database = any(KINDS.get(Path(u.name).suffix.lower()) is SourceKind.SQLITE
                        for u in uploads or [])
     with form_box, st.form(f"new-run-{preset}"):
-        request = st.text_area("What should the pipeline do?", height=168,
-                               label_visibility="collapsed",
-                               value=demo_req.request if demo_req else "",
+        # An example is shown as a goal line and bullets (same words, easier to read). The
+        # box grows with the number of lines so most examples need no scrolling.
+        shown = as_bullets(demo_req.request) if demo_req else ""
+        request = st.text_area("What should the pipeline do?",
+                               height=min(370, max(150, 24 + 27 * _rows(shown))),
+                               label_visibility="collapsed", value=shown,
                                placeholder="Load these CSVs, clean them, join them and write "
                                            "the result to the database.")
         if demo_req:
@@ -126,6 +136,8 @@ def new_run_form() -> None:
                                           table=(sqlite_table or None)
                                           if kind is SourceKind.SQLITE else None))
                 files.append(path)
+        # Unedited, an example goes to the agents in its original wording (see app/prompts.py).
+        request = text_to_send(request, demo_req.request if demo_req else None)
         req = DataRequest(request=request, expected_result=expected, target_table=table,
                           sources=sources,
                           quality_rules=[r.strip() for r in rules.splitlines() if r.strip()],

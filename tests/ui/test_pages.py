@@ -41,6 +41,7 @@ def test_new_run_form_prefills_the_showcase_example(home):
     at = AppTest.from_file(str(PAGES / "build.py"), default_timeout=30).run()
     assert not at.exception
     assert "customers" in at.text_area[0].value.lower()
+    assert at.text_area[0].value.count("• ") == 6   # shown as a goal line and bullets
     assert any(b.label == "Build the pipeline" for b in at.button)
     presets = [b for b in at.button if b.key and b.key.startswith("preset-")]
     assert len(presets) == 6
