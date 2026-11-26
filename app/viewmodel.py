@@ -55,6 +55,7 @@ class RunView:
     models: dict = field(default_factory=dict)
     budget_limits: dict = field(default_factory=dict)
     sources: dict = field(default_factory=dict)
+    source_specs: dict = field(default_factory=dict)  # as requested: name -> kind, path, url
     stages: dict[str, StageView] = field(default_factory=dict)
     activity: list[Activity] = field(default_factory=list)
     quality: list[dict] = field(default_factory=list)
@@ -97,6 +98,17 @@ def _set_plan(v: RunView, plan: dict) -> None:
     v.target_table = plan.get("target_table", v.target_table)
 
 
+def _source_label(v: RunView, e: dict) -> str:
+    """What to call a source on screen: its file name ("customers.csv"), not the internal
+    dataset name ("raw.customers"). An API source has no file, so it is "name (API)"."""
+    spec = v.source_specs.get(e.get("source") or "", {})
+    if spec.get("path"):
+        return str(spec["path"]).replace("\\", "/").rsplit("/", 1)[-1]
+    if spec.get("kind") == "api":
+        return f"{spec['name']} (API)"
+    return e.get("source") or e["dataset"]
+
+
 def build_view(events: list[dict]) -> RunView:
     v = RunView()
     for e in events:
@@ -110,6 +122,7 @@ def build_view(events: list[dict]) -> RunView:
 
         if k == "run_started":
             v.status, v.request = "running", e["request"]
+            v.source_specs = {src["name"]: src for src in e.get("sources") or []}
             v.target_table, v.models = e.get("target_table", ""), e.get("models", {})
             v.budget_limits = e.get("budget", {})
             add("orchestrator", "Run started", detail=e["request"])
@@ -118,7 +131,8 @@ def build_view(events: list[dict]) -> RunView:
             add("orchestrator", f"Resumed from {', '.join(e.get('pending', []))}")
         elif k == "source_loaded":
             v.sources[e["dataset"]] = {"rows": e["rows"], "columns": e["columns"],
-                                       "bad_lines": e.get("bad_lines", 0)}
+                                       "bad_lines": e.get("bad_lines", 0),
+                                       "label": _source_label(v, e)}
             extra = f", {e['bad_lines']} malformed line(s) set aside" if e.get("bad_lines") else ""
             add("orchestrator", f"Loaded {e['dataset']}: {_n(e['rows'])} rows, "
                                 f"{len(e['columns'])} columns{extra}")
@@ -390,3 +404,30 @@ def proofs(v: RunView) -> dict[str, int]:
     return {"tests_total": tests_total, "tests_passed": tests_passed,
             "checks_total": rnd["total"], "checks_passed": rnd["total"] - rnd["failed"],
             "set_aside": set_aside}
+
+
+# A failed quality check, said so a visitor can decide on it. Rule ids look like
+# "dataset.column.kind" (see adpb.contracts.RuleKind); {c} is the column, {d} the dataset.
+_CHECK_WORDS = {
+    "not_null": "{c} is empty in some rows of {d}",
+    "max_null_fraction": "too many {c} values are empty in {d}",
+    "unique": "{c} repeats in {d}",
+    "no_duplicate_rows": "{d} has repeated rows",
+    "dtype": "{c} in {d} is not the expected type",
+    "range": "{c} in {d} is outside the allowed range",
+    "allowed_values": "{c} in {d} has a value that is not allowed",
+    "row_count": "{d} has an unexpected number of rows",
+    "foreign_key": "{c} in {d} points to a row that does not exist",
+}
+
+
+def plain_check(rule_id: str) -> str:
+    """'clean_orders.customer_id.foreign_key' -> 'customer_id in clean_orders points to a
+    row that does not exist'. Anything that is not a rule id is returned unchanged."""
+    parts = rule_id.split(".")
+    if len(parts) < 3:
+        return rule_id
+    dataset, column, kind = parts[0], ".".join(parts[1:-1]), parts[-1]
+    column = column.replace("+", " and ")
+    template = _CHECK_WORDS.get(kind, kind.replace("_", " ") + " check on {c} in {d}")
+    return template.format(c=column, d=dataset)

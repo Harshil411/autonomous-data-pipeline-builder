@@ -68,22 +68,28 @@ def new_run_form() -> None:
         preset = preset_cards()
     demo_req, demo_files = (load_request_file(REQUESTS / f"{preset}.yaml") if preset != CUSTOM
                             else (None, []))
+    uploads, sqlite_table = None, ""
+    if not demo_req:
+        # Outside the form on purpose: the page reacts as soon as a file is added, so the
+        # one database-only question below appears only when a database was uploaded.
+        uploads = form_box.file_uploader("Your source files (CSV, JSON or SQLite)",
+                                         accept_multiple_files=True,
+                                         type=["csv", "json", "jsonl", "db", "sqlite"])
+    has_database = any(KINDS.get(Path(u.name).suffix.lower()) is SourceKind.SQLITE
+                       for u in uploads or [])
     with form_box, st.form(f"new-run-{preset}"):
         request = st.text_area("What should the pipeline do?", height=168,
                                label_visibility="collapsed",
                                value=demo_req.request if demo_req else "",
                                placeholder="Load these CSVs, clean them, join them and write "
                                            "the result to the database.")
-        uploads, sqlite_table = None, ""
         if demo_req:
             html('<div class="chips">' + "".join(
                 f"<span><b>{escape(s.name)}.{escape(str(s.kind.value))}</b>"
                 f"{f.stat().st_size / 1024:,.0f} KB</span>"
                 for s, f in zip(demo_req.sources, demo_files, strict=True)) + "</div>")
-        else:
-            uploads = st.file_uploader("Source files", accept_multiple_files=True,
-                                       type=["csv", "json", "jsonl", "db", "sqlite"])
-            sqlite_table = st.text_input("Table to read from SQLite files", value="")
+        elif has_database:
+            sqlite_table = st.text_input("Which table should be read from the SQLite file?")
         with st.expander("More options"):
             c1, c2 = st.columns([3, 1])
             expected = c1.text_input("What does a correct result look like?",
@@ -141,9 +147,15 @@ def live_view(run_id: str) -> None:
         mgr.decide(run_id, approved, by, note)
         st.rerun()
 
+    def new_request() -> None:
+        st.session_state.pop("run_id", None)
+        if "run" in st.query_params:
+            del st.query_params["run"]
+        st.rerun()
+
     if run_id in mgr.errors:
         st.error("The run stopped unexpectedly:\n\n" + mgr.errors[run_id])
-    run_dashboard(view, root, live=True, on_decide=decide)
+    run_dashboard(view, root, live=True, on_decide=decide, on_new_request=new_request)
 
 
 RUN_ID = re.compile(r"run-[A-Za-z0-9-]+")  # what a run folder is called; nothing else is read
@@ -169,11 +181,6 @@ def main() -> None:
     if not run_id:
         new_run_form()
         return
-    _, right = st.columns([7, 1])
-    if right.button("New request", width="stretch"):
-        st.session_state.pop("run_id")
-        del st.query_params["run"]
-        st.rerun()
     live_view(run_id)
 
 

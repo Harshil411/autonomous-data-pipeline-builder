@@ -144,7 +144,8 @@ def test_detail_is_one_closed_section_with_three_tabs(home, paused_run):
     details = next(e for e in at.expander if e.label == "Details")
     assert details.proto.expanded is False
     labels = [t.label for t in at.tabs]
-    assert labels[:3] == ["What happened", "Checks", "Cost"]
+    # (the list also holds the tabs nested inside Checks: Tests, Code, Output contract)
+    assert labels[0] == "What happened" and {"Checks", "Cost"} <= set(labels)
     assert not {"Activity", "Data quality", "Budget", "Report"} & set(labels)
 
 

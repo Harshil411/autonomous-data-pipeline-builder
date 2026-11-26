@@ -332,6 +332,7 @@ button:focus-visible { outline: 2px solid var(--orange) !important; outline-offs
 
 /* ---- details under the graph ------------------------------------------------------- */
 .panel-title { font-weight: 600; font-size: 1.05rem; color: var(--text); margin: .1rem 0 .5rem; }
+.panel-title.spaced { margin-top: 1.6rem; }
 .act { border-left: 3px solid var(--faint); padding: .4rem .9rem; margin: 0 0 .3rem;
   background: var(--surface); border-radius: 0 10px 10px 0;
   display: grid; grid-template-columns: 7rem 1fr; column-gap: .6rem; align-items: baseline; }

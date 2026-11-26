@@ -1,14 +1,16 @@
 """Rendering pieces shared by the pages. Every function takes a `RunView` (or plain data)
 and draws it; none of them talks to the pipeline directly.
 
-Layout of a run (one headline, one picture, detail on request):
+Layout of a run (one headline, one picture, detail only on request):
 
-    journey         Describe / Build / Approve, with the current step lit
+    journey         Describe / Build / Approve, with the current step lit, and one button
+                    back to an empty request
     hero            one status tag, one headline, one supporting line, time and cost
     [approval gate  only while a run waits for a person: the proof, the buttons, a preview]
     live graph      sources -> stages -> your approval -> database, with the Orchestrator
                     and the five agents underneath (app/graph.py)
-    details         tabs: activity, stage detail, data quality, cost, budget, report
+    [result         once loaded: the first rows that are now in the database]
+    Details         closed by default; three tabs: What happened, Checks, Cost
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ import streamlit as st
 
 from app.graph import render_graph
 from app.theme import THEMES, active_mode, css
-from app.viewmodel import RunView, agent_label, hero, journey_step, proofs
+from app.viewmodel import RunView, agent_label, hero, journey_step, plain_check, proofs
 
 STATUS_WORDS = {"running": "Working", "awaiting_approval": "Waiting for your approval",
                 "succeeded": "Loaded", "failed": "Failed", "rejected": "Rejected",
@@ -212,8 +214,8 @@ def approval_gate(v: RunView, live: bool, on_decide=None, replay_note: str = "")
                  f'passed in the sandbox</li>{checks}'
                  f'<li class="warn">{warn}{p["set_aside"]:,} rows set aside, each with a reason'
                  f'</li></ul>')
-            if failed:
-                st.warning("Still failing: " + ", ".join(failed))
+            if failed:  # in plain words; the exact rule is under Details, Checks
+                st.warning("Still failing: " + "; ".join(plain_check(f) for f in failed) + ".")
             if not live or on_decide is None:
                 st.caption(replay_note or "Open this run in Past runs to decide.")
             else:
@@ -221,7 +223,10 @@ def approval_gate(v: RunView, live: bool, on_decide=None, replay_note: str = "")
                     who = st.text_input("Your name",
                                         value=st.session_state.get("approver", ""),
                                         placeholder="Recorded with the decision")
-                    note = st.text_input("Note (optional)")
+                    # One decision, two buttons. A note is possible but stays out of the way.
+                    with st.popover("Add a note"):
+                        note = st.text_input("Note (optional)",
+                                             placeholder="Recorded with the decision")
                     c1, c2 = st.columns([1.6, 1])
                     approve = c1.form_submit_button(f"Approve and load {req['rows']:,} rows",
                                                     type="primary", width="stretch")
@@ -379,38 +384,69 @@ def report_panel(run_root: Path) -> None:
     if not md.exists():
         st.caption("The report is written when the run finishes.")
         return
-    c1, c2, _ = st.columns([1, 1, 3])
+    c1, c2, c3 = st.columns([1, 1, 3], vertical_alignment="center")
     c1.download_button("Report (Markdown)", md.read_text(), file_name=md.name)
     c2.download_button("Report (JSON)", js.read_text(), file_name=js.name)
-    st.markdown(md.read_text())
+    if c3.toggle("Read the report here", key=f"report-{run_root.name}"):
+        st.markdown(md.read_text())
 
 
 # -- the whole run ----------------------------------------------------------------------------
 
 
+def result_preview(v: RunView) -> None:
+    """Once the rows are loaded: show the first of them. The run should end on the result,
+    not only on a sentence about it. (These are the rows the person saw and approved.)"""
+    req = v.approval_request or {}
+    preview = req.get("preview") or []
+    if not v.load or not preview:
+        return
+    html(f'<div class="peek"><b>{escape(v.load["table"])}</b><span>first {len(preview)} of '
+         f'{v.load["rows"]:,} rows, now in the database</span></div>')
+    st.dataframe(pd.DataFrame(preview), hide_index=True, width="stretch")
+
+
+def details(v: RunView, run_root: Path) -> None:
+    """Everything a curious visitor or a grader may ask for, behind one closed section so
+    it never competes with the headline and the graph."""
+    with st.expander("Details"):
+        happened, checks, cost = st.tabs(["What happened", "Checks", "Cost"])
+        with happened:
+            full = st.toggle(f"Show all {len(v.activity)} steps", key=f"log-{v.run_id}")
+            activity_rows(v, limit=500 if full else 8)
+            report_panel(run_root)
+        with checks:
+            html('<div class="panel-title">Tests for each stage</div>')
+            stage_focus(v)
+            html('<div class="panel-title spaced">Quality checks on the result</div>')
+            quality_panel(v)
+        with cost:
+            cost_panel(v)
+            html('<div class="panel-title spaced">Limits for this run</div>')
+            budget_meters(v)
+
+
 def run_dashboard(v: RunView, run_root: Path, live: bool, on_decide=None,
-                  replay_note: str = "") -> None:
-    journey(journey_step(v), done=bool(v.load))
+                  replay_note: str = "", on_new_request=None) -> None:
+    """Draw one run. `on_decide(approved, by, note)` enables the approval buttons;
+    `on_new_request()` adds the one button that leads back to an empty request."""
+    if on_new_request is None:
+        journey(journey_step(v), done=bool(v.load))
+    else:  # the button shares the journey's row instead of taking a row of its own
+        _, mid, right = st.columns([1.3, 6, 1.3], vertical_alignment="center")
+        with mid:
+            journey(journey_step(v), done=bool(v.load))
+        over = v.finished or bool(v.load)  # nothing left to watch or decide
+        if right.button("Build another" if over else "New request", key="new-request",
+                        width="stretch"):
+            on_new_request()
     run_hero(v, live)
     approval_gate(v, live, on_decide, replay_note)
     graph(v)
     if v.error and v.status in ("failed", "budget_exceeded"):
         st.error(v.error)
-    tabs = st.tabs(["Activity", "Stage detail", "Data quality", "Cost", "Budget", "Report"])
-    with tabs[0]:
-        activity_rows(v, limit=8)
-        with st.expander(f"Full activity log ({len(v.activity)} entries)"):
-            activity_rows(v, limit=500)
-    with tabs[1]:
-        stage_focus(v)
-    with tabs[2]:
-        quality_panel(v)
-    with tabs[3]:
-        cost_panel(v)
-    with tabs[4]:
-        budget_meters(v)
-    with tabs[5]:
-        report_panel(run_root)
+    result_preview(v)
+    details(v, run_root)
 
 
 def read_json(path: Path) -> dict:

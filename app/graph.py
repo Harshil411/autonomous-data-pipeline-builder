@@ -92,16 +92,16 @@ def _agent_words(v: RunView, agent: str, state: str) -> str:
     if state == "working":
         return "working now"
     calls = v.cost["by_agent"].get(agent, {}).get("calls", 0)
-    if state == "done":
-        return f"{calls} model call{'s' if calls != 1 else ''}"
+    if state == "done":  # plain words here; tokens and cost per agent are under Details
+        return {1: "worked once", 2: "worked twice"}.get(calls, f"worked {calls} times")
     return "waiting its turn"
 
 
 def _orchestrator_words(v: RunView) -> str:
     if v.finished:
-        calls, re = v.cost["calls"], v.replans
-        redesign = f", {re} stage{'s' if re != 1 else ''} redesigned" if re else ""
-        return f"finished. {calls} model calls{redesign}, every step recorded for replay."
+        re = v.replans
+        redesign = f" {re} stage{'s' if re != 1 else ''} redesigned along the way." if re else ""
+        return f"finished.{redesign} Every step is recorded and can be replayed."
     if v.status == "awaiting_approval":
         return "has staged the result and is waiting. It cannot approve on your behalf."
     return ("plain code, no AI. It decides which agent works next and how many tries each "
@@ -241,7 +241,7 @@ def render_graph(v: RunView) -> str:
 
     for name, info in v.sources.items():
         x, y = pos[name]
-        node("source", x, y, W, H, name, f"{info['rows']:,} rows")
+        node("source", x, y, W, H, info.get("label") or name, f"{info['rows']:,} rows")
     if planning:
         x, y = pos[PLAN]
         node("stage pending", x, y, W, H, "Stages", "Being planned")

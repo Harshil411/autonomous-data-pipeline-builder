@@ -108,8 +108,9 @@ def actions(runs: list[dict]) -> tuple[str, list[dict], object]:
     st.session_state["replay-speed"] = c2.segmented_control(
         "Replay speed", [1, 2, 4, 8], default=st.session_state.get("replay-speed", 4),
         format_func=lambda x: f"{x}x", key="speed") or 4
-    if c3.button("Resume from the failed stage", width="stretch",
-                 disabled=view.status not in ("failed", "budget_exceeded")):
+    # Offered only when it can do something: a run that failed or hit its budget.
+    if view.status in ("failed", "budget_exceeded") and c3.button(
+            "Resume from the failed stage", width="stretch"):
         manager().resume(run_id)
         st.rerun()
     if c4.button("Rebuild with no model", width="stretch",
