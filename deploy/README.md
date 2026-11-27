@@ -1,8 +1,10 @@
 # Putting the full app on a free server
 
 The app needs a host that can start Docker containers, because every stage of generated
-code runs in the sandbox. This guide uses Google Cloud's always-free `e2-micro` VM. It has
-about 1 GB of memory, so the setup adds swap and the app allows one build at a time.
+code runs in the sandbox. This guide uses Oracle Cloud's Always Free Arm VM (2 cores and
+12 GB of memory when this was written; check Oracle's "Always Free Resources" page, the
+allowance has changed before). Google Cloud's free `e2-micro` also works but is slow; see
+the last section.
 
 ## What visitors can do
 
@@ -15,12 +17,15 @@ about 1 GB of memory, so the setup adds swap and the app allows one build at a t
 
 ## Steps
 
-1. **Create the VM** (Google Cloud console, Compute Engine): machine type `e2-micro`, a
-   free-tier US region (`us-west1`, `us-central1` or `us-east1`), Debian 12, a 30 GB
-   standard disk, and tick "Allow HTTP traffic" and "Allow HTTPS traffic".
-2. **Set a budget alert** in Billing so you hear about any charge. Network traffic beyond
-   the free allowance is billed.
-3. **SSH in and get the code**:
+1. **Create the VM** (Oracle Cloud console, Compute, Instances, in your home region):
+   image Ubuntu 24.04, shape `VM.Standard.A1.Flex` with 2 OCPUs and 12 GB, a public IPv4
+   address, and your SSH public key. Keep the default boot volume size. If the console says
+   "Out of host capacity", try another availability domain or try again later.
+2. **Open ports 80 and 443** in the subnet's security list (Networking, Virtual cloud
+   networks, your network, Security Lists, Default Security List, Add Ingress Rules): source
+   `0.0.0.0/0`, TCP, destination ports `80,443`. The setup script opens the same ports in
+   the server's own firewall.
+3. **SSH in and get the code** (the login user on Ubuntu images is `ubuntu`):
    ```bash
    sudo apt-get update && sudo apt-get install -y git
    git clone https://github.com/Harshil411/autonomous-data-pipeline-builder.git
@@ -42,7 +47,11 @@ about 1 GB of memory, so the setup adds swap and the app allows one build at a t
    bash deploy/setup-vm.sh                          # plain HTTP on the VM's IP address
    SITE_DOMAIN=demo.example.com bash deploy/setup-vm.sh   # HTTPS, once a domain points here
    ```
-6. **Open** `http://<the VM's external IP>` and run the shop-orders example.
+6. **Open** `http://<the VM's public IP>` and run the shop-orders example.
+
+Oracle may reclaim an Always Free VM that stays nearly idle for seven days, and may close
+an account nobody signs in to for a month. Everything on the server can be rebuilt from
+this guide; do not keep the only copy of anything there.
 
 ## Day to day
 
@@ -55,6 +64,9 @@ about 1 GB of memory, so the setup adds swap and the app allows one build at a t
 | Clear old runs | `rm -rf var/visitors` |
 
 ## On a 1 GB server, or one that already hosts another site
+
+On Google Cloud use an `e2-micro` in a free-tier US region with Debian 12 and a 30 GB
+standard disk, tick "Allow HTTP traffic" and "Allow HTTPS traffic", and set a budget alert.
 
 Measured on an `e2-micro` shared with another small site: the shop-orders example finished
 in about six and a half minutes (81 seconds on a laptop), with no out-of-memory kills.
