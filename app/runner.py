@@ -39,15 +39,20 @@ class RunManager:
         t = self._threads.get(run_id)
         return bool(t and t.is_alive())
 
-    def start(self, request: DataRequest, files: list[Path]) -> str:
-        handle = RunHandle.create(request, files, home=self.home)
+    def active(self) -> int:
+        """How many runs are working right now (a small public server allows one)."""
+        return sum(t.is_alive() for t in self._threads.values())
+
+    def start(self, request: DataRequest, files: list[Path], home: Path | None = None) -> str:
+        handle = RunHandle.create(request, files, home=home or self.home)
         self._spawn(handle.ws.run_id, handle.run)
         return handle.ws.run_id
 
-    def decide(self, run_id: str, approved: bool, by: str, note: str = "") -> None:
-        handle = RunHandle.open(run_id, home=self.home)
+    def decide(self, run_id: str, approved: bool, by: str, note: str = "",
+               home: Path | None = None) -> None:
+        handle = RunHandle.open(run_id, home=home or self.home)
         self._spawn(run_id, lambda: handle.decide(approved=approved, by=by, note=note))
 
-    def resume(self, run_id: str) -> None:
-        handle = RunHandle.open(run_id, home=self.home)
+    def resume(self, run_id: str, home: Path | None = None) -> None:
+        handle = RunHandle.open(run_id, home=home or self.home)
         self._spawn(run_id, handle.resume)

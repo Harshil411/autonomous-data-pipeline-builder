@@ -9,13 +9,13 @@ from datetime import datetime
 
 import streamlit as st
 
-from adpb.config import load_settings
 from adpb.observability.events import EventLog
 from app.components import STATUS_WORDS, page_title, run_dashboard
 from app.state import manager
 from app.viewmodel import build_view
+from app.visitor import settings as visitor_settings
 
-settings = load_settings()
+settings = visitor_settings()  # this visitor's own runs when the server keeps them private
 REPLAY_NOTE = "Replay: the decision appears when the recording reaches it."
 
 
@@ -82,7 +82,7 @@ def live(run_id: str) -> None:
     view = build_view(EventLog.read(root / "events.jsonl"))
 
     def decide(approved: bool, by: str, note: str) -> None:
-        manager().decide(run_id, approved, by, note)
+        manager().decide(run_id, approved, by, note, home=settings.home)
         st.rerun()
 
     run_dashboard(view, root, live=True, on_decide=decide)
@@ -114,7 +114,7 @@ def actions(runs: list[dict]) -> tuple[str, list[dict], object]:
     if view.status in ("failed", "budget_exceeded") and c3.button(
             "Resume", width="stretch",
             help="Continue from the stage that failed, keeping the stages that passed."):
-        manager().resume(run_id)
+        manager().resume(run_id, home=settings.home)
         st.rerun()
     if c4.button("Rebuild, no model", width="stretch",
                  disabled=not (root / "pipeline" / "manifest.json").exists(),
@@ -124,7 +124,7 @@ def actions(runs: list[dict]) -> tuple[str, list[dict], object]:
         from adpb.runtime import RunHandle
         with st.spinner("Rebuilding every stage from the sources with the committed code"):
             started = time.monotonic()
-            result = rerun(RunHandle.open(run_id))
+            result = rerun(RunHandle.open(run_id, home=settings.home))
         if result["match"]:
             st.success(f"Reproduced exactly in {time.monotonic() - started:.1f}s with 0 model "
                        f"calls (fingerprint {result['fingerprint'][:12]}).")

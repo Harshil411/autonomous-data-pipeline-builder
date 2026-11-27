@@ -28,6 +28,8 @@ from pathlib import Path
 
 RUNTIME_DIR = Path(__file__).resolve().parent.parent / "sandbox_runtime"
 DEFAULT_IMAGE = os.environ.get("ADPB_SANDBOX_IMAGE", "adpb-sandbox:0.1")
+# A small server can lower the per-container memory limit (e.g. 300m); the default suits a laptop.
+DEFAULT_MEMORY = os.environ.get("ADPB_SANDBOX_MEMORY", "1g")
 STARTUP_GRACE_S = 5.0  # container start-up is not charged against the code's time limit
 MAX_OUTPUT_CHARS = 4_000
 
@@ -86,7 +88,7 @@ def _trim(text: str) -> str:
 
 
 class DockerSandbox:
-    def __init__(self, image: str = DEFAULT_IMAGE, cpus: float = 1.0, memory: str = "1g",
+    def __init__(self, image: str = DEFAULT_IMAGE, cpus: float = 1.0, memory: str = DEFAULT_MEMORY,
                  pids: int = 256, timeout_s: float = 90.0, policy: ShellPolicy | None = None):
         self.image = image
         self.cpus = cpus

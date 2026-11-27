@@ -10,14 +10,16 @@ from pathlib import Path
 
 import streamlit as st
 
-from adpb.config import REPO_ROOT, load_settings
+from adpb.config import REPO_ROOT
 from adpb.contracts import BudgetLimits, DataRequest, SourceKind, SourceSpec
 from adpb.observability.events import EventLog
 from adpb.requests_io import load_request_file
 from app.components import bullet_typing, html, journey, run_dashboard
+from app.daily_cap import remaining_today, run_ceiling
 from app.prompts import as_bullets, text_to_send
 from app.state import manager
 from app.viewmodel import build_view
+from app.visitor import all_runs_dirs, settings
 
 REQUESTS = REPO_ROOT / "benchmarks" / "requests"
 # Short titles: six buttons share one row under the request box. The blurb is the tooltip.
@@ -75,6 +77,13 @@ def new_run_form() -> None:
         preset = preset_cards()
     demo_req, demo_files = (load_request_file(REQUESTS / f"{preset}.yaml") if preset != CUSTOM
                             else (None, []))
+    # On a public server (ADPB_DAILY_USD set) new runs stop when today's amount is used.
+    left = remaining_today(all_runs_dirs())
+    ceiling = run_ceiling(left)
+    if ceiling is None:
+        form_box.info("Today's build budget for this public demo is used up. Past runs are "
+                      "still open to explore, and new builds open again tomorrow.")
+        return
     uploads, sqlite_table = None, ""
     if not demo_req:
         # Outside the form on purpose: the page reacts as soon as a file is added, so the
@@ -108,9 +117,9 @@ def new_run_form() -> None:
                                   else "pipeline_output")
             rules = st.text_area("Your quality rules (one per line, optional)", height=70,
                                  value="\n".join(demo_req.quality_rules) if demo_req else "")
-            budget = st.slider("Spending limit for this run (US dollars)", 0.10, 2.00,
-                               value=float(demo_req.budget.max_usd) if demo_req else 0.50,
-                               step=0.05)
+            budget = st.slider("Spending limit for this run (US dollars)", 0.10, ceiling,
+                               value=min(ceiling, float(demo_req.budget.max_usd)
+                                         if demo_req else 0.50), step=0.05)
         _, c4 = st.columns([2.2, 1])
         go = c4.form_submit_button("Build the pipeline", type="primary", width="stretch")
     bullet_typing()
@@ -127,7 +136,9 @@ def new_run_form() -> None:
             if not uploads:
                 st.error("Add at least one source file.")
                 return
-            folder = Path(tempfile.mkdtemp(prefix="adpb-upload-", dir=load_settings().home))
+            home = settings().home
+            home.mkdir(parents=True, exist_ok=True)
+            folder = Path(tempfile.mkdtemp(prefix="adpb-upload-", dir=home))
             sources, files = [], []
             for up in uploads:
                 path = folder / up.name
@@ -146,18 +157,25 @@ def new_run_form() -> None:
     except Exception as exc:  # validation errors read as instructions, not tracebacks
         st.error(f"That request cannot run yet: {exc}")
         return
-    st.session_state["run_id"] = manager().start(req, files)
+    if left is not None:
+        if manager().active():
+            st.warning("Another build is running on this demo server. Try again in a minute.")
+            return
+        if (run_ceiling(remaining_today(all_runs_dirs())) or 0.0) < budget:
+            st.warning("Today's build budget was just used up. New builds open again tomorrow.")
+            return
+    st.session_state["run_id"] = manager().start(req, files, home=settings().home)
     st.rerun()
 
 
 @st.fragment(run_every=1.0)
 def live_view(run_id: str) -> None:
-    root = load_settings().runs_dir / run_id
+    root = settings().runs_dir / run_id
     view = build_view(EventLog.read(root / "events.jsonl"))
     mgr = manager()
 
     def decide(approved: bool, by: str, note: str) -> None:
-        mgr.decide(run_id, approved, by, note)
+        mgr.decide(run_id, approved, by, note, home=settings().home)
         st.rerun()
 
     def new_request() -> None:
@@ -179,7 +197,7 @@ def current_run() -> str | None:
     address bar (?run=...), so a page reload - including the one that switches between
     the dark and light looks - comes back to the same run instead of the empty form."""
     run_id = st.session_state.get("run_id") or st.query_params.get("run")
-    if run_id and RUN_ID.fullmatch(run_id) and (load_settings().runs_dir / run_id).is_dir():
+    if run_id and RUN_ID.fullmatch(run_id) and (settings().runs_dir / run_id).is_dir():
         st.session_state["run_id"] = run_id
         st.query_params["run"] = run_id
         return run_id

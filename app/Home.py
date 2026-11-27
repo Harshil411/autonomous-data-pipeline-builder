@@ -16,11 +16,13 @@ from dotenv import load_dotenv  # noqa: E402
 
 load_dotenv(ROOT / ".env")
 from app.components import favicon, look_switch, setup_page, wordmark  # noqa: E402
+from app.visitor import remember_visitor  # noqa: E402
 
 st.set_page_config(page_title="Pipeline Builder", page_icon=favicon(), layout="wide",
                    initial_sidebar_state="collapsed")
 
 setup_page()
+remember_visitor()  # only on a public server with private runs
 PAGES = [
     st.Page("views/build.py", title="Build", default=True),
     st.Page("views/runs.py", title="Past runs"),

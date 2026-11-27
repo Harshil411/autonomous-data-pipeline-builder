@@ -46,7 +46,8 @@ from adpb.tools.gateway import ToolGateway
 from adpb.tools.sources import fetch_api_snapshot
 from adpb.workspace import Workspace
 
-INHERITED_ENV = ("PATH", "HOME", "LANG", "TMPDIR", "DOCKER_HOST", "USER")
+INHERITED_ENV = ("PATH", "HOME", "LANG", "TMPDIR", "DOCKER_HOST", "USER",
+                 "ADPB_SANDBOX_MEMORY")
 
 
 def make_model(settings: Settings) -> ModelClient:
