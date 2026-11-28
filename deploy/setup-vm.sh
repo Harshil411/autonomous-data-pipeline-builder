@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# One-time setup of a Debian/Ubuntu server (Oracle Cloud's free Arm VM, or Google Cloud's
-# free e2-micro). Run it as your normal login user, from the repository root:
+# One-time setup of a Debian/Ubuntu server (an Azure VM, Oracle Cloud's free Arm VM, or Google
+# Cloud's free e2-micro). Run it as your normal login user, from the repository root:
 #   bash deploy/setup-vm.sh
 #
 # It installs Docker, uv and Caddy, adds swap on a small-memory machine, opens the host
@@ -70,7 +70,9 @@ sudo systemctl enable --now pipeline-builder
 
 echo "== HTTPS =="
 if [ -n "${SITE_DOMAIN:-}" ]; then
-  printf '%s {\n  reverse_proxy 127.0.0.1:8501\n}\n' "$SITE_DOMAIN" | sudo tee /etc/caddy/Caddyfile >/dev/null
+  # The second block sends anyone still using the bare IP address to the secure name.
+  printf '%s {\n  reverse_proxy 127.0.0.1:8501\n}\n\n:80 {\n  redir https://%s{uri}\n}\n' \
+    "$SITE_DOMAIN" "$SITE_DOMAIN" | sudo tee /etc/caddy/Caddyfile >/dev/null
 else
   printf ':80 {\n  reverse_proxy 127.0.0.1:8501\n}\n' | sudo tee /etc/caddy/Caddyfile >/dev/null
   echo "No SITE_DOMAIN given: serving plain HTTP on port 80. Re-run with SITE_DOMAIN=your.domain for HTTPS."
