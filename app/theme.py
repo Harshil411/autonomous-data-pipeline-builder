@@ -297,9 +297,11 @@ svg.graph .stage.live .box { fill: var(--orange-soft); stroke: var(--orange); st
 svg.graph .stage.live .sub { fill: var(--orange-text); }
 svg.graph .stage.failed .box { fill: var(--red-soft); stroke: var(--red); }
 svg.graph .stage.failed .sub { fill: var(--red-text); }
-svg.graph .stage.pending .box, svg.graph .db.empty .box, svg.graph .agent.idle .box {
+svg.graph .stage.pending .box, svg.graph .source.pending .box, svg.graph .db.empty .box,
+svg.graph .agent.idle .box {
   fill: rgba(var(--surface-rgb), .6); stroke: var(--line-3); stroke-dasharray: 5 5; }
-svg.graph .stage.pending .title, svg.graph .agent.idle .title { fill: var(--muted); }
+svg.graph .stage.pending .title, svg.graph .source.pending .title,
+svg.graph .agent.idle .title { fill: var(--muted); }
 svg.graph .gate .box { fill: url(#gate-fill); stroke: var(--maroon-line); }
 svg.graph .gate .title { fill: var(--gate-text); }
 svg.graph .gate .sub { fill: var(--gate-sub); font-size: 13px; }

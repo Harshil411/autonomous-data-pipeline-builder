@@ -68,8 +68,49 @@ def test_gate_opens_and_the_database_lights_up_after_approval(recorded):
     assert 'class="edge flow"' in svg  # the path through the gate is animated
 
 
-def test_graph_of_an_empty_run_is_empty():
-    assert render_graph(build_view([])) == ""
+def test_graph_is_drawn_from_the_first_second_before_any_source_is_read(recorded):
+    # The run screen used to be a headline over an empty page until the first source was
+    # profiled. Now the whole route is there at once, with the unknown parts held open.
+    svg = render_graph(build_view(recorded[:1]))     # only "run_started" so far
+    assert svg.startswith("<svg")
+    # the request already names its files, so each source has its box from the start
+    assert ">customers.csv<" in svg and ">orders.csv<" in svg
+    assert svg.count('class="node source pending"') == 2 and svg.count("Being read") == 2
+    assert ">Stages<" in svg and "Planned next" in svg
+    assert 'class="node gate locked"' in svg and "Nothing loaded" in svg
+    assert svg.count('<g class="agent ') == 5 and 'class="agent live"' not in svg
+    assert svg.count("waiting its turn") == 5        # no agent has been called yet
+
+
+def test_a_source_box_fills_in_where_it_stood_and_the_picture_keeps_its_size(recorded):
+    import re
+    first_loaded = next(i for i, e in enumerate(recorded) if e["kind"] == "source_loaded")
+    last_loaded = max(i for i, e in enumerate(recorded) if e["kind"] == "source_loaded")
+    before = render_graph(build_view(recorded[:1]))
+    half = render_graph(build_view(recorded[: first_loaded + 1]))
+    after = render_graph(build_view(recorded[: last_loaded + 1]))
+    assert half.count('class="node source pending"') == 1 and half.count("Being read") == 1
+    assert "Being read" not in after and "Being planned" in after
+
+    def box(svg):
+        return re.search(r'viewBox="([^"]+)"', svg).group(1)
+
+    def places(svg):  # where each source box sits
+        return re.findall(r'<g class="node source[^"]*" transform="([^"]+)"', svg)
+    assert box(before) == box(half) == box(after)
+    assert places(before) == places(half) == places(after)
+
+
+def test_the_planner_is_not_said_to_work_while_a_source_is_still_being_read(recorded):
+    first_loaded = next(i for i, e in enumerate(recorded) if e["kind"] == "source_loaded")
+    half = build_view(recorded[: first_loaded + 1])
+    assert hero(half)["headline"] == "Reading and profiling the sources"
+    assert 'class="agent live"' not in render_graph(half)
+
+
+def test_graph_of_a_run_with_no_events_says_it_has_not_started():
+    svg = render_graph(build_view([]))               # no request, so no file names either
+    assert ">Sources<" in svg and "Not read yet" in svg and "Being read" not in svg
 
 
 # -- the headline --------------------------------------------------------------------------------

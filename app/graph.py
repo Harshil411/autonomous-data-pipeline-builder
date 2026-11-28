@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from html import escape
 
-from app.viewmodel import ACTIVE, LANE, RunView, agent_label, agent_states
+from app.viewmodel import ACTIVE, LANE, RunView, agent_label, agent_states, spec_label
 
 # Sizes in SVG units (the SVG scales to the page width). W x H is a source or stage node.
 W, H, GX, GY, PAD = 204, 78, 60, 22, 26
@@ -33,6 +33,7 @@ RISE = 62   # vertical room between the data's path and the Orchestrator bar
 DROP = 46   # vertical room between the Orchestrator bar and the agents
 AGENT_MIN_W = 180  # an agent card is never narrower than this, so its two lines of text fit
 PLAN = "__plan__"  # placeholder node shown until the Planner has proposed the stages
+SRC = "__source__"  # prefix of a placeholder node for a source that has not been read yet
 
 # 24x24 stroke icons, one per agent (drawn here so the app needs no icon font or network).
 ICONS = {
@@ -128,9 +129,9 @@ def _orchestrator_words(v: RunView) -> str:
 
 
 def render_graph(v: RunView) -> str:
-    """The whole graph as one SVG string ('' before any source has been read)."""
-    if not v.stages and not v.sources:
-        return ""
+    """The whole graph as one SVG string. It is drawn from the first second of a run: the
+    parts that are not known yet (sources, stages) are held open by placeholder nodes, so
+    the visitor sees the whole route at once and the picture does not jump as it fills."""
     depth = _depths(v)
     columns: dict[int, list[str]] = {}
     for name in [*v.sources, *v.stages]:  # sources in load order, stages in plan order
@@ -146,6 +147,21 @@ def render_graph(v: RunView) -> str:
         row_of.update({n: i for i, n in enumerate(columns[col])})
 
     planning = not v.stages  # the first seconds: sources are read, the plan is not written
+    # Earlier still, some sources have not been profiled. The request names them, so each
+    # one gets its box at once, in request order, and fills in where it stands.
+    waiting: dict[str, str] = {}  # placeholder node -> the name to show in it
+    if planning:
+        read = {info.get("source"): name for name, info in v.sources.items()}
+        specs = v.source_specs or ({} if v.sources else {"": {"name": "Sources"}})
+        ordered = []
+        for name, spec in specs.items():
+            if name in read:
+                ordered.append(read[name])
+            else:
+                waiting[SRC + name] = spec_label(spec)
+                ordered.append(SRC + name)
+        columns[0] = ordered + [n for n in v.sources if n not in ordered]
+    reading = bool(waiting)
     if planning:
         columns[1] = [PLAN]  # hold the stages' place, so the picture does not jump later
     last_col = max(columns, default=0)
@@ -219,7 +235,7 @@ def render_graph(v: RunView) -> str:
             edge(x1 + W, y1 + H / 2, x2, y2 + H / 2, cls)
     if planning:
         px, py = pos[PLAN]
-        for name in v.sources:
+        for name in columns[0]:
             x, y = pos[name]
             edge(x + W, y + H / 2, px, py + H / 2, "")
         edge(px + W, py + H / 2, gate_x, mid_y, "")
@@ -264,10 +280,16 @@ def render_graph(v: RunView) -> str:
     for name, info in v.sources.items():
         x, y = pos[name]
         node("source", x, y, W, H, info.get("label") or name, f"{info['rows']:,} rows")
+    for name, label in waiting.items():
+        x, y = pos[name]
+        node("source pending", x, y, W, H, label,
+             "Being read" if running else
+             "Not read yet" if v.status == "not started" else "Never read")
     if planning:
         x, y = pos[PLAN]
         node("stage pending", x, y, W, H, "Stages",
-             "Being planned" if running else "Never planned")
+             "Never planned" if not running else
+             "Planned next" if reading else "Being planned")
     for s in v.stages.values():
         x, y = pos[s.id]
         if s.status in ACTIVE:  # being worked on - or left half-done by a run that stopped

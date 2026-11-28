@@ -101,11 +101,16 @@ def _source_label(v: RunView, e: dict) -> str:
     """What to call a source on screen: its file name ("customers.csv"), not the internal
     dataset name ("raw.customers"). An API source has no file, so it is "name (API)"."""
     spec = v.source_specs.get(e.get("source") or "", {})
+    return spec_label(spec) or e.get("source") or e["dataset"]
+
+
+def spec_label(spec: dict) -> str:
+    """The on-screen name of a requested source, known before it has been read."""
     if spec.get("path"):
         return str(spec["path"]).replace("\\", "/").rsplit("/", 1)[-1]
     if spec.get("kind") == "api":
         return f"{spec['name']} (API)"
-    return e.get("source") or e["dataset"]
+    return spec.get("name") or ""
 
 
 def build_view(events: list[dict]) -> RunView:
@@ -131,7 +136,8 @@ def build_view(events: list[dict]) -> RunView:
         elif k == "source_loaded":
             v.sources[e["dataset"]] = {"rows": e["rows"], "columns": e["columns"],
                                        "bad_lines": e.get("bad_lines", 0),
-                                       "label": _source_label(v, e)}
+                                       "label": _source_label(v, e),
+                                       "source": e.get("source")}
             extra = f", {e['bad_lines']} malformed line(s) set aside" if e.get("bad_lines") else ""
             add("orchestrator", f"Loaded {e['dataset']}: {_n(e['rows'])} rows, "
                                 f"{len(e['columns'])} columns{extra}")
@@ -283,7 +289,8 @@ def now_line(v: RunView) -> tuple[str, str]:
             return "tester", (f"The Tester is running {s.id} in the sandbox "
                               f"(attempt {max(s.attempt, 1)} of {limit})")
     if not v.stages:
-        if not v.sources:
+        read = {info.get("source") for info in v.sources.values()}
+        if not v.sources or any(name not in read for name in v.source_specs):
             return "orchestrator", "Reading and profiling the sources"
         return "planner", "The Planner is designing the pipeline"
     if any(s.status == "failed" for s in v.stages.values()):
