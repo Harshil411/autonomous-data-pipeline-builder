@@ -10,6 +10,10 @@ Vasu Patel.
 **Live demo:** https://pipeline-builder.westus2.cloudapp.azure.com (open to anyone, under a
 small daily spending cap; [how it is hosted](deploy/README.md)).
 
+**Walkthrough videos** (90 seconds each, narrated):
+[shop orders](https://drive.google.com/file/d/1PJSJAen1SGxm-b2BRLgwpDqQNDwhEE3n/view) and
+[student grades](https://drive.google.com/file/d/1xha_PEUvk56nIf1dk7Lroy0DBH6o4r10/view).
+
 ## What it does
 
 1. You describe the data you need and point at the sources (CSV, JSON, SQLite or an API).
