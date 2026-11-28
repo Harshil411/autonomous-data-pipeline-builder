@@ -7,6 +7,9 @@ and loads the result only after a person approves it.
 ADS 5984 *Agentic AI in Practice*, Virginia Tech. Team: Harshil Agrawal, Siddharth Pal,
 Vasu Patel.
 
+**Live demo:** https://pipeline-builder.westus2.cloudapp.azure.com (open to anyone, under a
+small daily spending cap; [how it is hosted](deploy/README.md)).
+
 ## What it does
 
 1. You describe the data you need and point at the sources (CSV, JSON, SQLite or an API).
